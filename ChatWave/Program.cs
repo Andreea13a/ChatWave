@@ -11,7 +11,7 @@ namespace ChatWave
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainChatForm());
+            Application.Run(new RegisterForm());
 
 
         }

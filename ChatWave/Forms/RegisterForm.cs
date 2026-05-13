@@ -1,4 +1,7 @@
-﻿using System;
+﻿using ChatWave.Data;
+using ChatWave.Models;
+using System;
+using System.Data.SqlClient;
 using System.Drawing;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
@@ -25,23 +28,24 @@ namespace ChatWave.Forms
         private Button btnGoLogin;
         private Label lblError;
         private Label lblSuccess;
+        private Label lblOr;
 
         public RegisterForm()
         {
             InitializeComponent();
             InitializeUI();
+            this.WindowState = FormWindowState.Maximized;
         }
 
         private void InitializeUI()
         {
             // FORM
-            this.Text = "ChatWave - Înregistrare";
-            this.Size = new Size(440, 780);
+
+            this.WindowState = FormWindowState.Maximized;
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.White;
-            this.FormBorderStyle = FormBorderStyle.FixedSingle;
-            this.MaximizeBox = false;
-
+            this.FormBorderStyle = FormBorderStyle.Sizable;
+            this.MaximizeBox = true;
             // HEADER
             pnlHeader = new Panel();
             pnlHeader.Dock = DockStyle.Top;
@@ -54,7 +58,8 @@ namespace ChatWave.Forms
             lblTitle.Font = new Font("Segoe UI", 24, FontStyle.Bold);
             lblTitle.TextAlign = ContentAlignment.MiddleCenter;
             lblTitle.Location = new Point(0, 20);
-            lblTitle.Size = new Size(440, 45);
+            lblTitle.Dock = DockStyle.Top;
+            lblTitle.Height = 45;
 
             lblSubtitle = new Label();
             lblSubtitle.Text = "Creează un cont nou 🚀";
@@ -62,7 +67,8 @@ namespace ChatWave.Forms
             lblSubtitle.Font = new Font("Segoe UI", 11);
             lblSubtitle.TextAlign = ContentAlignment.MiddleCenter;
             lblSubtitle.Location = new Point(0, 70);
-            lblSubtitle.Size = new Size(440, 30);
+            lblSubtitle.Dock = DockStyle.Bottom;
+            lblSubtitle.Height = 40;
 
             pnlHeader.Controls.Add(lblTitle);
             pnlHeader.Controls.Add(lblSubtitle);
@@ -71,6 +77,7 @@ namespace ChatWave.Forms
             pnlCenter = new Panel();
             pnlCenter.Dock = DockStyle.Fill;
             pnlCenter.BackColor = Color.White;
+            pnlCenter.AutoScroll = true;
 
             // USERNAME
             lblUsername = new Label();
@@ -188,7 +195,7 @@ namespace ChatWave.Forms
                 btnRegister.BackColor = ColorTranslator.FromHtml("#B39DDB");
 
             // SEPARATOR
-            Label lblOr = new Label();
+            lblOr = new Label();
             lblOr.Text = "─────────── sau ───────────";
             lblOr.Font = new Font("Segoe UI", 9);
             lblOr.ForeColor = ColorTranslator.FromHtml("#AAAAAA");
@@ -231,6 +238,33 @@ namespace ChatWave.Forms
 
             this.Controls.Add(pnlCenter);
             this.Controls.Add(pnlHeader);
+            this.Controls.Add(pnlCenter);
+            this.Controls.Add(pnlHeader);
+
+            pnlCenter.Resize += (s, e) =>
+            {
+                int centerX = (pnlCenter.Width - 340) / 2;
+
+                txtUsername.Left = centerX;
+                txtEmail.Left = centerX;
+                txtPhone.Left = centerX;
+                txtPassword.Left = centerX;
+                txtConfirmPassword.Left = centerX;
+
+                lblUsername.Left = centerX;
+                lblEmail.Left = centerX;
+                lblPhone.Left = centerX;
+                lblPassword.Left = centerX;
+                lblConfirm.Left = centerX;
+
+                lblError.Left = centerX;
+                lblSuccess.Left = centerX;
+
+                btnRegister.Left = centerX;
+                btnGoLogin.Left = centerX;
+
+                lblOr.Left = centerX + 15;
+            };
         }
 
         private void StyleTextBox(TextBox txt)
@@ -262,7 +296,7 @@ namespace ChatWave.Forms
                 return;
             }
 
-            if (!Regex.IsMatch(txtPhone.Text, @"^\+?[0-9]{10,13}$"))
+            if (!Regex.IsMatch(txtPhone.Text, @"^\+?[0-9]{9,13}$"))
             {
                 lblError.Text = "⚠ Număr de telefon invalid!";
                 return;
@@ -279,19 +313,40 @@ namespace ChatWave.Forms
                 lblError.Text = "⚠ Parola trebuie să aibă minim 6 caractere!";
                 return;
             }
+            User user = new User
+            {
+                Username = txtUsername.Text,
+                Email = txtEmail.Text,
+                Phone = txtPhone.Text,
+                Password = txtPassword.Text,
+                Role = "user",
+                CreatedAt = DateTime.Now
+            };
+
+            bool success = UserRepository.AddUser(user);
+
+            if (!success)
+            {
+                lblError.Text = "⚠ Eroare la salvare!";
+                return;
+            }
 
             lblSuccess.Text = "✔ Cont creat cu succes!";
-            MessageBox.Show("✨ Bun venit, " + txtUsername.Text + "!",
-                "Înregistrare reușită",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
+            MessageBox.Show("✔ Cont creat cu succes! Te redirecționăm la login...");
+            this.Hide();
+            LoginForm login = new LoginForm();
+            login.Show();
+           
+
         }
+        
 
         private void BtnGoLogin_Click(object sender, EventArgs e)
         {
+            this.Hide();
             LoginForm login = new LoginForm();
             login.Show();
-            this.Hide();
+          
         }
     }
 }

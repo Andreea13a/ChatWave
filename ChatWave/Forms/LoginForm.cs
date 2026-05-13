@@ -6,168 +6,216 @@ namespace ChatWave.Forms
 {
     public partial class LoginForm : Form
     {
+        private TextBox txtUser;
+        private TextBox txtPass;
+        private Label lblError;
+
         public LoginForm()
         {
             InitializeComponent();
             DesignUI();
+            this.WindowState = FormWindowState.Maximized;
         }
 
         private void DesignUI()
         {
-            // FORM
-            this.Text = "Login";
-            this.Size = new Size(400, 520);
-            this.FormBorderStyle = FormBorderStyle.FixedSingle;
-            this.MaximizeBox = false;
-            this.BackColor = Color.FromArgb(245, 245, 245);
+            // FORM - SETĂRI FULLSCREEN
+            this.WindowState = FormWindowState.Maximized;
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.BackColor = Color.White;
+            this.FormBorderStyle = FormBorderStyle.Sizable;
+            this.MaximizeBox = true;
 
-            // HEADER
-            Panel header = new Panel();
-            header.BackColor = Color.FromArgb(167, 147, 214); // mov pastel
-            header.Size = new Size(this.Width, 130);
-            header.Location = new Point(0, 0);
-            this.Controls.Add(header);
+            // HEADER (ACEEAȘI CULOARE CA LA REGISTER)
+            Panel pnlHeader = new Panel();
+            pnlHeader.Dock = DockStyle.Top;
+            pnlHeader.Height = 120;
+            pnlHeader.BackColor = ColorTranslator.FromHtml("#B39DDB");
 
-            Label title = new Label();
-            title.Text = "✨ ChatWave";
-            title.ForeColor = Color.White;
-            title.Font = new Font("Segoe UI", 18, FontStyle.Bold);
-            title.AutoSize = true;
-            title.Location = new Point(100, 40);
-            header.Controls.Add(title);
+            Label lblTitle = new Label();
+            lblTitle.Text = "✨ ChatWave";
+            lblTitle.ForeColor = Color.White;
+            lblTitle.Font = new Font("Segoe UI", 24, FontStyle.Bold);
+            lblTitle.TextAlign = ContentAlignment.MiddleCenter;
+            lblTitle.Location = new Point(0, 20);
+            lblTitle.Dock = DockStyle.Top;
+            lblTitle.Height = 45;
 
-            // USERNAME PANEL
-            Panel userPanel = new Panel();
-            userPanel.Size = new Size(260, 40);
-            userPanel.Location = new Point(70, 170);
-            userPanel.BackColor = Color.FromArgb(235, 230, 250);
-            userPanel.BorderStyle = BorderStyle.None;
-            this.Controls.Add(userPanel);
+            Label lblSubtitle = new Label();
+            lblSubtitle.Text = "Autentifică-te în cont 🚀";
+            lblSubtitle.ForeColor = ColorTranslator.FromHtml("#EDE7F6");
+            lblSubtitle.Font = new Font("Segoe UI", 11);
+            lblSubtitle.TextAlign = ContentAlignment.MiddleCenter;
+            lblSubtitle.Location = new Point(0, 70);
+            lblSubtitle.Dock = DockStyle.Top;
+            lblSubtitle.Height = 40;
 
-            Label userIcon = new Label();
-            userIcon.Text = "👤";
-            userIcon.Location = new Point(5, 8);
-            userIcon.AutoSize = true;
-            userPanel.Controls.Add(userIcon);
+            pnlHeader.Controls.Add(lblTitle);
+            pnlHeader.Controls.Add(lblSubtitle);
 
-            TextBox txtUser = new TextBox();
-            txtUser.BorderStyle = BorderStyle.None;
-            txtUser.Text = "Username";
-            txtUser.ForeColor = Color.Gray;
+            // CENTER PANEL
+            Panel pnlCenter = new Panel();
+            pnlCenter.Dock = DockStyle.Fill;
+            pnlCenter.BackColor = Color.White;
+            pnlCenter.AutoScroll = true;
 
-            txtUser.Enter += (s, e) =>
-            {
-                if (txtUser.Text == "Username")
-                {
-                    txtUser.Text = "";
-                    txtUser.ForeColor = Color.Black;
-                }
-            };
+            // USERNAME
+            Label lblUsername = new Label();
+            lblUsername.Text = "👤  Username";
+            lblUsername.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            lblUsername.ForeColor = ColorTranslator.FromHtml("#4A4A4A");
+            lblUsername.Location = new Point(40, 25);
+            lblUsername.AutoSize = true;
 
-            txtUser.Leave += (s, e) =>
-            {
-                if (txtUser.Text == "")
-                {
-                    txtUser.Text = "Username";
-                    txtUser.ForeColor = Color.Gray;
-                }
-            };
-            txtUser.Location = new Point(35, 10);
-            txtUser.Width = 200;
-            userPanel.Controls.Add(txtUser);
+            txtUser = new TextBox();
+            txtUser.Location = new Point(40, 50);
+            txtUser.Size = new Size(340, 35);
+            txtUser.Font = new Font("Segoe UI", 11);
+            txtUser.BorderStyle = BorderStyle.FixedSingle;
+            txtUser.BackColor = ColorTranslator.FromHtml("#F3F0FF");
+            StyleTextBox(txtUser);
 
-            // PASSWORD PANEL
-            Panel passPanel = new Panel();
-            passPanel.Size = new Size(260, 40);
-            passPanel.Location = new Point(70, 230);
-            passPanel.BackColor = Color.White;
-            passPanel.BorderStyle = BorderStyle.FixedSingle;
-            this.Controls.Add(passPanel);
+            // PASSWORD
+            Label lblPassword = new Label();
+            lblPassword.Text = "🔒  Parolă";
+            lblPassword.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            lblPassword.ForeColor = ColorTranslator.FromHtml("#4A4A4A");
+            lblPassword.Location = new Point(40, 100);
+            lblPassword.AutoSize = true;
 
-            Label passIcon = new Label();
-            passIcon.Text = "🔒";
-            passIcon.Location = new Point(5, 8);
-            passIcon.AutoSize = true;
-            passPanel.Controls.Add(passIcon);
+            txtPass = new TextBox();
+            txtPass.Location = new Point(40, 125);
+            txtPass.Size = new Size(340, 35);
+            txtPass.Font = new Font("Segoe UI", 11);
+            txtPass.BorderStyle = BorderStyle.FixedSingle;
+            txtPass.PasswordChar = '*';
+            txtPass.BackColor = ColorTranslator.FromHtml("#F3F0FF");
+            StyleTextBox(txtPass);
 
-            TextBox txtPass = new TextBox();
-            txtPass.BorderStyle = BorderStyle.None;
-            txtPass.Text = "Parolă";
-            txtPass.ForeColor = Color.Gray;
-
-            txtPass.Enter += (s, e) =>
-            {
-                if (txtPass.Text == "Parolă")
-                {
-                    txtPass.Text = "";
-                    txtPass.ForeColor = Color.Black;
-                    txtPass.UseSystemPasswordChar = true;
-                }
-            };
-
-            txtPass.Leave += (s, e) =>
-            {
-                if (txtPass.Text == "")
-                {
-                    txtPass.UseSystemPasswordChar = false;
-                    txtPass.Text = "Parolă";
-                    txtPass.ForeColor = Color.Gray;
-                }
-            };
-            txtPass.UseSystemPasswordChar = true;
-            txtPass.Location = new Point(35, 10);
-            txtPass.Width = 200;
-            passPanel.Controls.Add(txtPass);
+            // ERROR LABEL
+            lblError = new Label();
+            lblError.Text = "";
+            lblError.ForeColor = ColorTranslator.FromHtml("#E74C3C");
+            lblError.Font = new Font("Segoe UI", 9);
+            lblError.Location = new Point(40, 175);
+            lblError.Size = new Size(340, 20);
 
             // LOGIN BUTTON
             Button btnLogin = new Button();
-            btnLogin.Text = "✔ Autentifică-te";
-            btnLogin.Size = new Size(260, 45);
-            btnLogin.Location = new Point(70, 310);
-            btnLogin.BackColor = Color.FromArgb(160, 130, 210);
+            btnLogin.Text = "✔  Autentifică-te";
+            btnLogin.Location = new Point(40, 205);
+            btnLogin.Size = new Size(340, 45);
+            btnLogin.BackColor = ColorTranslator.FromHtml("#B39DDB");
             btnLogin.ForeColor = Color.White;
             btnLogin.FlatStyle = FlatStyle.Flat;
             btnLogin.FlatAppearance.BorderSize = 0;
-            btnLogin.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-
-            // HOVER EFFECT
+            btnLogin.Font = new Font("Segoe UI", 12, FontStyle.Bold);
+            btnLogin.Cursor = Cursors.Hand;
+            btnLogin.Click += BtnLogin_Click;
             btnLogin.MouseEnter += (s, e) =>
-                btnLogin.BackColor = Color.FromArgb(140, 110, 200);
-
+                btnLogin.BackColor = ColorTranslator.FromHtml("#9575CD");
             btnLogin.MouseLeave += (s, e) =>
-                btnLogin.BackColor = Color.FromArgb(160, 130, 210);
+                btnLogin.BackColor = ColorTranslator.FromHtml("#B39DDB");
 
-            btnLogin.Click += (s, e) =>
+            // SEPARATOR
+            Label lblOr = new Label();
+            lblOr.Text = "─────────── sau ───────────";
+            lblOr.Font = new Font("Segoe UI", 9);
+            lblOr.ForeColor = ColorTranslator.FromHtml("#AAAAAA");
+            lblOr.Location = new Point(55, 265);
+            lblOr.AutoSize = true;
+
+            // REGISTER BUTTON
+            Button btnGoRegister = new Button();
+            btnGoRegister.Text = "📝  Nu ai cont? Înregistrează-te";
+            btnGoRegister.Location = new Point(40, 295);
+            btnGoRegister.Size = new Size(340, 42);
+            btnGoRegister.BackColor = Color.White;
+            btnGoRegister.ForeColor = ColorTranslator.FromHtml("#B39DDB");
+            btnGoRegister.FlatStyle = FlatStyle.Flat;
+            btnGoRegister.FlatAppearance.BorderSize = 1;
+            btnGoRegister.FlatAppearance.BorderColor = ColorTranslator.FromHtml("#B39DDB");
+            btnGoRegister.Font = new Font("Segoe UI", 11);
+            btnGoRegister.Cursor = Cursors.Hand;
+            btnGoRegister.Click += (s, e) =>
             {
-                MessageBox.Show("Login apăsat!");
+                this.Hide();
+                RegisterForm register = new RegisterForm();
+                register.Show();
             };
+            btnGoRegister.MouseEnter += (s, e) =>
+                btnGoRegister.BackColor = ColorTranslator.FromHtml("#F3F0FF");
+            btnGoRegister.MouseLeave += (s, e) =>
+                btnGoRegister.BackColor = Color.White;
 
-            this.Controls.Add(btnLogin);
+            pnlCenter.Controls.Add(lblUsername);
+            pnlCenter.Controls.Add(txtUser);
+            pnlCenter.Controls.Add(lblPassword);
+            pnlCenter.Controls.Add(txtPass);
+            pnlCenter.Controls.Add(lblError);
+            pnlCenter.Controls.Add(btnLogin);
+            pnlCenter.Controls.Add(lblOr);
+            pnlCenter.Controls.Add(btnGoRegister);
 
-            // REGISTER TEXT
-            Label register = new Label();
-            register.Text = "Nu ai cont? Înregistrează-te";
-            register.ForeColor = Color.Gray;
-            register.AutoSize = true;
-            register.Location = new Point(100, 370);
-            this.Controls.Add(register);
+            this.Controls.Add(pnlCenter);
+            this.Controls.Add(pnlHeader);
 
-            txtUser.BackColor = userPanel.BackColor;
-            txtPass.BackColor = passPanel.BackColor;
-            txtUser.ForeColor = Color.FromArgb(70, 70, 70);
-            txtPass.ForeColor = Color.FromArgb(70, 70, 70);
-            Panel line1 = new Panel();
-            line1.BackColor = Color.FromArgb(200, 190, 230);
-            line1.Size = new Size(260, 2);
-            line1.Location = new Point(70, 210);
-            this.Controls.Add(line1);
+            // CENTRALIZARE CONTROALE
+            pnlCenter.Resize += (s, e) =>
+            {
+                int centerX = (pnlCenter.Width - 340) / 2;
 
-            Panel line2 = new Panel();
-            line2.BackColor = Color.FromArgb(200, 190, 230);
-            line2.Size = new Size(260, 2);
-            line2.Location = new Point(70, 270);
-            this.Controls.Add(line2);
+                txtUser.Left = centerX;
+                txtPass.Left = centerX;
+                lblUsername.Left = centerX;
+                lblPassword.Left = centerX;
+                lblError.Left = centerX;
+                btnLogin.Left = centerX;
+                btnGoRegister.Left = centerX;
+                lblOr.Left = centerX + 15;
+            };
+        }
+
+        private void StyleTextBox(TextBox txt)
+        {
+            txt.Enter += (s, e) =>
+                txt.BackColor = ColorTranslator.FromHtml("#EDE7F6");
+            txt.Leave += (s, e) =>
+                txt.BackColor = ColorTranslator.FromHtml("#F3F0FF");
+        }
+
+        private void BtnLogin_Click(object sender, EventArgs e)
+        {
+            lblError.Text = "";
+
+            string username = txtUser.Text.Trim();
+            string password = txtPass.Text;
+
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+            {
+                lblError.Text = "⚠ Completează toate câmpurile!";
+                return;
+            }
+
+            try
+            {
+                var user = UserService.Login(username, password);
+
+                if (user == null)
+                {
+                    lblError.Text = "❌ Username sau parolă incorectă!";
+                    return;
+                }
+
+                this.Hide();
+                MainChatForm mainForm = new MainChatForm(user);
+                mainForm.FormClosed += (snd, args) => this.Close();
+                mainForm.Show();
+            }
+            catch (Exception ex)
+            {
+                lblError.Text = $"⚠ Eroare: {ex.Message}";
+            }
         }
     }
-    
 }

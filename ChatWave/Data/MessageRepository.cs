@@ -2,7 +2,6 @@
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using Message = ChatWave.Models.Message;
 
 namespace ChatWave.Data
@@ -62,6 +61,27 @@ namespace ChatWave.Data
                 Console.WriteLine("Eroare: " + ex.Message);
             }
             return messages;
+        }
+
+        public static bool DeleteMessage(int id)
+        {
+            try
+            {
+                using (var conn = DatabaseHelper.GetConnection())
+                {
+                    conn.Open();
+                    string query = "DELETE FROM Messages WHERE Id = @id";
+                    var cmd = new MySqlCommand(query, conn);
+                    cmd.Parameters.AddWithValue("@id", id);
+                    cmd.ExecuteNonQuery();
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Eroare: " + ex.Message);
+                return false;
+            }
         }
     }
 }

@@ -95,6 +95,24 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BaseForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Data\UserProfileRepository.cs" />
+    <Compile Include="Forms\ProfileForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\ProfileForm.Designer.cs">
+      <DependentUpon>ProfileForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\SettingsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\SettingsForm.Designer.cs">
+      <DependentUpon>SettingsForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Models\UserProfile.cs" />
+    <Compile Include="UserService.cs" />
     <Compile Include="Data\DatabaseHelper.cs" />
     <Compile Include="Data\MessageRepository.cs" />
     <Compile Include="Data\UserRepository.cs" />
