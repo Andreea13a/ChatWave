@@ -8,6 +8,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
+using Message = ChatWave.Models.Message;
 
 namespace ChatWave.Forms
 {
@@ -18,7 +19,6 @@ namespace ChatWave.Forms
         TextBox messageBox;
         private LoggedUser currentUser;
 
-        // Profile panel components
         Panel pnlUserProfile;
         Label lblProfileName;
         PictureBox pbAvatar;
@@ -27,20 +27,16 @@ namespace ChatWave.Forms
         Label lblPhoneRight;
         Button btnChangePhoto;
 
-        // Cache pentru imagini
         private Dictionary<int, Image> userImages = new Dictionary<int, Image>();
-
-        // Lista completă de utilizatori
         private List<User> allUsers;
+        private int selectedUserId = -1;
+        private string selectedUsername = "";
 
         public MainChatForm(LoggedUser user)
         {
             currentUser = user;
             InitializeComponent();
-
-            // Încarcă toți utilizatorii o singură dată
             allUsers = UserRepository.GetAllUsers();
-
             DesignUI();
             this.WindowState = FormWindowState.Maximized;
         }
@@ -107,14 +103,12 @@ namespace ChatWave.Forms
             AddMenuButton(dropdown, "  Profilul meu", 40, movButton, (s, e) =>
             {
                 dropdown.Visible = false;
-                // Deschide propriul profil
                 ShowUserProfile(currentUser.Id);
             });
             AddMenuButton(dropdown, "  Setări", 75, movButton, (s, e) =>
             {
                 dropdown.Visible = false;
-                SettingsForm settings = new SettingsForm(currentUser);
-                settings.ShowDialog();
+                new SettingsForm(currentUser).ShowDialog();
             });
             AddMenuButton(dropdown, "  🔓 Logout", 100, Color.FromArgb(192, 57, 43), (s, e) =>
             {
@@ -141,17 +135,16 @@ namespace ChatWave.Forms
             };
             this.Click += (s, e) => dropdown.Visible = false;
 
-            // ── PANEL PROFIL DREAPTA ─────────────────────────────────
+            // ==========================================
+            // 1. PANEL PROFIL DREAPTA (Se adaugă primul)
+            // ==========================================
             pnlUserProfile = new Panel();
             pnlUserProfile.Width = 250;
-            pnlUserProfile.Height = this.Height - 70;
-            pnlUserProfile.Location = new Point(this.Width - 250, 70);
-            pnlUserProfile.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
+            pnlUserProfile.Dock = DockStyle.Right;
             pnlUserProfile.BackColor = movCard;
             pnlUserProfile.Visible = false;
             this.Controls.Add(pnlUserProfile);
 
-            // Avatar PictureBox
             pbAvatar = new PictureBox();
             pbAvatar.Size = new Size(100, 100);
             pbAvatar.Location = new Point((pnlUserProfile.Width - 100) / 2, 20);
@@ -160,15 +153,11 @@ namespace ChatWave.Forms
             pbAvatar.Cursor = Cursors.Hand;
             pbAvatar.Click += (s, e) =>
             {
-                // Permite schimbarea pozei doar pentru profilul curent
                 if (lblProfileName.Text == currentUser.Username)
-                {
                     ChangeProfilePhoto();
-                }
             };
             pnlUserProfile.Controls.Add(pbAvatar);
 
-            // Buton schimbare poză
             btnChangePhoto = new Button();
             btnChangePhoto.Text = "📷 Schimbă poza";
             btnChangePhoto.Size = new Size(120, 30);
@@ -216,12 +205,12 @@ namespace ChatWave.Forms
             lblPhoneRight.TextAlign = ContentAlignment.MiddleCenter;
             pnlUserProfile.Controls.Add(lblPhoneRight);
 
-            // ── LEFT PANEL (toți utilizatorii) ───────────────────────
+            // ==========================================
+            // 2. LEFT PANEL (Se adaugă al doilea)
+            // ==========================================
             Panel leftPanel = new Panel();
             leftPanel.Width = 300;
-            leftPanel.Height = this.Height - 70;
-            leftPanel.Location = new Point(0, 70);
-            leftPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            leftPanel.Dock = DockStyle.Left;
             leftPanel.BackColor = movCard;
             this.Controls.Add(leftPanel);
 
@@ -267,7 +256,6 @@ namespace ChatWave.Forms
             conversations.Cursor = Cursors.Hand;
             leftPanel.Controls.Add(conversations);
 
-            // Desenare personalizată cu poză
             conversations.DrawItem += (s, e) =>
             {
                 if (e.Index < 0) return;
@@ -279,7 +267,6 @@ namespace ChatWave.Forms
                 string username = conversations.Items[e.Index].ToString();
                 var user = allUsers.FirstOrDefault(u => u.Username == username);
 
-                // Desenează poza de profil
                 Rectangle avatarRect = new Rectangle(e.Bounds.Left + 8, e.Bounds.Top + 8, 38, 38);
                 e.Graphics.FillEllipse(new SolidBrush(Color.FromArgb(200, 190, 220)), avatarRect);
 
@@ -287,115 +274,96 @@ namespace ChatWave.Forms
                 {
                     Image userImage = GetUserImage(user.Id);
                     if (userImage != null)
-                    {
                         e.Graphics.DrawImage(userImage, avatarRect);
-                    }
                     else
                     {
-                        using (Font avatarFont = new Font("Segoe UI", 12, FontStyle.Bold))
+                        using (Font f = new Font("Segoe UI", 12, FontStyle.Bold))
                         using (StringFormat sf = new StringFormat())
                         {
                             sf.Alignment = StringAlignment.Center;
                             sf.LineAlignment = StringAlignment.Center;
-                            e.Graphics.DrawString(username.Substring(0, 1).ToUpper(),
-                                avatarFont, Brushes.White, avatarRect, sf);
+                            e.Graphics.DrawString(
+                                username.Substring(0, 1).ToUpper(),
+                                f, Brushes.White, avatarRect, sf);
                         }
                     }
                 }
 
-                // Desenează numele
                 Rectangle textRect = new Rectangle(e.Bounds.Left + 55, e.Bounds.Top + 10, e.Bounds.Width - 65, 30);
                 using (Font textFont = new Font("Segoe UI", selected ? 11 : 10, selected ? FontStyle.Bold : FontStyle.Regular))
                 {
-                    Color textColor = selected
-                        ? Color.FromArgb(90, 40, 160)
-                        : Color.FromArgb(120, 80, 180);
-                    e.Graphics.DrawString(username, textFont, new SolidBrush(textColor), textRect);
+                    e.Graphics.DrawString(username, textFont,
+                        new SolidBrush(selected ? Color.FromArgb(90, 40, 160) : Color.FromArgb(120, 80, 180)),
+                        textRect);
                 }
 
-                e.Graphics.DrawLine(
-                    new Pen(Color.FromArgb(240, 235, 250)),
+                e.Graphics.DrawLine(new Pen(Color.FromArgb(240, 235, 250)),
                     e.Bounds.Left, e.Bounds.Bottom - 1,
                     e.Bounds.Right, e.Bounds.Bottom - 1);
             };
 
-            // SelectedIndexChanged - arată profilul utilizatorului selectat
-            conversations.SelectedIndexChanged += (s, e) =>
-            {
-                if (conversations.SelectedItem == null) return;
-                string selectedUsername = conversations.SelectedItem.ToString();
-                var user = allUsers.FirstOrDefault(u => u.Username == selectedUsername);
-                if (user != null)
-                {
-                    ShowUserProfile(user.Id);
-                }
-            };
-
-            // Încarcă TOȚI utilizatorii în listă (nu doar conversații)
+            // Încarcă utilizatorii
             var allUsernames = new List<string>();
             foreach (var user in allUsers)
             {
-                // Excludem utilizatorul curent din listă
                 if (user.Id != currentUser.Id)
                 {
                     conversations.Items.Add(user.Username);
                     allUsernames.Add(user.Username);
-                    // Preîncarcă imaginea
                     GetUserImage(user.Id);
                 }
             }
 
-            // Caută utilizatori
             searchBox.TextChanged += (s, e) =>
             {
                 string filter = searchBox.Text.ToLower();
                 if (filter == "🔍 caută utilizator...") return;
                 conversations.Items.Clear();
                 foreach (var name in allUsernames)
-                {
                     if (name.ToLower().Contains(filter))
                         conversations.Items.Add(name);
-                }
             };
 
-            // ── CHAT PANEL ───────────────────────────────────────────
+            // ==========================================
+            // 3. CHAT PANEL (Se adaugă ULTIMUL - Dock Fill)
+            // ==========================================
             Panel chatPanel = new Panel();
-            chatPanel.Left = leftPanel.Right;
-            chatPanel.Top = 70;
-            chatPanel.Width = this.Width - leftPanel.Width;
-            chatPanel.Height = this.Height - 70;
-            chatPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            chatPanel.Dock = DockStyle.Fill;
             chatPanel.BackColor = Color.White;
             this.Controls.Add(chatPanel);
+            chatPanel.BringToFront();
 
-            chatBox = new ListBox();
-            chatBox.Left = 15;
-            chatBox.Top = 15;
-            chatBox.Width = chatPanel.Width - 30;
-            chatBox.Height = chatPanel.Height - 80;
-            chatBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            chatBox.BackColor = movCard;
-            chatPanel.Controls.Add(chatBox);
+            // INPUT PANEL — Dock Bottom
+            Panel inputPanel = new Panel();
+            inputPanel.Height = 65;
+            inputPanel.Dock = DockStyle.Bottom;
+            inputPanel.BackColor = Color.FromArgb(235, 230, 250);
+            chatPanel.Controls.Add(inputPanel);
 
-            messageBox = new TextBox();
-            messageBox.Left = 15;
-            messageBox.Top = chatPanel.Height - 55;
-            messageBox.Width = chatPanel.Width - 140;
-            messageBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            chatPanel.Controls.Add(messageBox);
-
+            // BUTTON SEND
             Button sendButton = new Button();
-            sendButton.Text = "Send";
-            sendButton.Left = chatPanel.Width - 120;
-            sendButton.Top = chatPanel.Height - 55;
-            sendButton.Width = 105;
-            sendButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            sendButton.BackColor = movButton;
+            sendButton.Text = "✉ Trimite";
+            sendButton.Size = new Size(110, 35);
+            sendButton.Location = new Point(chatPanel.Width - 130, 15);
+            sendButton.Anchor = AnchorStyles.Right | AnchorStyles.Top;
+            sendButton.BackColor = Color.FromArgb(167, 147, 214);
             sendButton.ForeColor = Color.White;
             sendButton.FlatStyle = FlatStyle.Flat;
             sendButton.FlatAppearance.BorderSize = 0;
+            sendButton.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            sendButton.Cursor = Cursors.Hand;
             sendButton.Click += SendMessage;
-            chatPanel.Controls.Add(sendButton);
+            inputPanel.Controls.Add(sendButton);
+
+            // TEXTBOX MESSAGE
+            messageBox = new TextBox();
+            messageBox.Location = new Point(15, 15);
+            messageBox.Size = new Size(chatPanel.Width - 160, 35);
+            messageBox.Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
+            messageBox.Font = new Font("Segoe UI", 11);
+            messageBox.BorderStyle = BorderStyle.FixedSingle;
+            messageBox.BackColor = Color.White;
+            inputPanel.Controls.Add(messageBox);
 
             messageBox.KeyDown += (s, e) =>
             {
@@ -406,27 +374,96 @@ namespace ChatWave.Forms
                 }
             };
 
-            // Eveniment de redimensionare
+            // CHAT HEADER — Dock Top
+            Panel chatHeader = new Panel();
+            chatHeader.Height = 50;
+            chatHeader.Dock = DockStyle.Top;
+            chatHeader.BackColor = Color.FromArgb(245, 242, 255);
+            chatPanel.Controls.Add(chatHeader);
+
+            Label lblChatTitle = new Label();
+            lblChatTitle.Text = "Selectează un utilizator";
+            lblChatTitle.Font = new Font("Segoe UI", 12, FontStyle.Bold);
+            lblChatTitle.ForeColor = Color.FromArgb(90, 40, 160);
+            lblChatTitle.Location = new Point(15, 12);
+            lblChatTitle.AutoSize = true;
+            chatHeader.Controls.Add(lblChatTitle);
+
+            // CHAT BOX — Dock Fill
+            chatBox = new ListBox();
+            chatBox.Dock = DockStyle.Fill;
+            chatBox.BackColor = Color.FromArgb(250, 248, 255);
+            chatBox.BorderStyle = BorderStyle.None;
+            chatBox.Font = new Font("Segoe UI", 10);
+            chatBox.DrawMode = DrawMode.OwnerDrawFixed;
+            chatBox.ItemHeight = 35;
+            chatPanel.Controls.Add(chatBox);
+
+            inputPanel.BringToFront();
+
+            chatBox.DrawItem += (s, e) =>
+            {
+                if (e.Index < 0) return;
+                string item = chatBox.Items[e.Index].ToString();
+                bool isMine = item.StartsWith("[Tu]");
+
+                e.Graphics.FillRectangle(
+                    new SolidBrush(isMine ? Color.FromArgb(235, 225, 255) : Color.FromArgb(250, 248, 255)),
+                    e.Bounds);
+
+                e.Graphics.DrawString(item,
+                    new Font("Segoe UI", 10),
+                    new SolidBrush(isMine ? Color.FromArgb(90, 40, 160) : Color.FromArgb(50, 50, 50)),
+                    new Rectangle(e.Bounds.Left + 10, e.Bounds.Top + 5, e.Bounds.Width - 20, e.Bounds.Height - 5));
+            };
+
+            // SELECT USER
+            conversations.SelectedIndexChanged += (s, e) =>
+            {
+                if (conversations.SelectedItem == null) return;
+                selectedUsername = conversations.SelectedItem.ToString();
+                var user = allUsers.FirstOrDefault(u => u.Username == selectedUsername);
+                if (user != null)
+                {
+                    selectedUserId = user.Id;
+                    ShowUserProfile(user.Id);
+                    LoadMessages();
+                    lblChatTitle.Text = "💬 " + selectedUsername;
+                }
+            };
+
+            // RESIZE EVENT
             this.Resize += (s, e) =>
             {
                 userLabel.Location = new Point(this.Width - 180, 25);
                 menuBtn.Location = new Point(this.Width - 90, 18);
                 dropdown.Location = new Point(this.Width - 210, 70);
-                pnlUserProfile.Location = new Point(this.Width - 250, 70);
-                pnlUserProfile.Height = this.Height - 70;
-                leftPanel.Height = this.Height - 70;
-                chatPanel.Width = this.Width - leftPanel.Width;
-                chatPanel.Height = this.Height - 70;
-                chatBox.Width = chatPanel.Width - 30;
-                chatBox.Height = chatPanel.Height - 80;
-                messageBox.Top = chatPanel.Height - 55;
-                messageBox.Width = chatPanel.Width - 140;
-                sendButton.Left = chatPanel.Width - 120;
-                sendButton.Top = chatPanel.Height - 55;
+
+                if (messageBox != null && sendButton != null && inputPanel != null)
+                {
+                    sendButton.Location = new Point(inputPanel.Width - 130, 15);
+                    messageBox.Width = inputPanel.Width - 160;
+                }
             };
         }
 
-        // Arată profilul unui utilizator
+        private void LoadMessages()
+        {
+            chatBox.Items.Clear();
+            if (selectedUserId == -1) return;
+
+            var messages = MessageRepository.GetMessagesBetweenUsers(currentUser.Id, selectedUserId);
+
+            foreach (var msg in messages)
+            {
+                string prefix = msg.SenderId == currentUser.Id ? "[Tu]" : "[" + msg.SenderName + "]";
+                chatBox.Items.Add($"{prefix} {msg.SentAt:HH:mm}: {msg.Text}");
+            }
+
+            if (chatBox.Items.Count > 0)
+                chatBox.TopIndex = chatBox.Items.Count - 1;
+        }
+
         private void ShowUserProfile(int userId)
         {
             var user = allUsers.FirstOrDefault(u => u.Id == userId);
@@ -438,17 +475,50 @@ namespace ChatWave.Forms
             lblEmailRight.Text = "📧 " + (user.Email ?? "-");
             lblPhoneRight.Text = "📱 " + (user.Phone ?? "-");
 
-            // Încarcă imaginea (șterge din cache pentru a reîncărca)
             if (userImages.ContainsKey(userId))
                 userImages.Remove(userId);
 
             LoadImageIntoPictureBox(pbAvatar, userId);
-
-            // Arată butonul de schimbare poză DOAR pentru utilizatorul curent
             btnChangePhoto.Visible = (userId == currentUser.Id);
         }
 
-        // ==================== METODE AJUTĂTOARE ====================
+        private void SendMessage(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(messageBox.Text))
+            {
+                MessageBox.Show("⚠ Mesajul nu poate fi gol!", "Eroare", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (selectedUserId == -1)
+            {
+                MessageBox.Show("⚠ Selectează un utilizator!", "Eroare", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var message = new Message
+            {
+                SenderId = currentUser.Id,
+                SenderName = currentUser.Username,
+                ReceiverId = selectedUserId,
+                ReceiverName = selectedUsername,
+                Text = messageBox.Text.Trim(),
+                SentAt = DateTime.Now
+            };
+
+            bool success = MessageRepository.AddMessage(message);
+
+            if (success)
+            {
+                messageBox.Clear();
+                LoadMessages();
+                messageBox.Focus();
+            }
+            else
+            {
+                MessageBox.Show("⚠ Eroare la trimiterea mesajului!", "Eroare", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
 
         private void AddSectionLabel(Panel parent, string text, int y)
         {
@@ -461,8 +531,7 @@ namespace ChatWave.Forms
             parent.Controls.Add(lbl);
         }
 
-        private void AddMenuButton(Panel parent, string text, int y,
-                                   Color color, EventHandler onClick)
+        private void AddMenuButton(Panel parent, string text, int y, Color color, EventHandler onClick)
         {
             Button btn = new Button();
             btn.Text = text;
@@ -488,33 +557,16 @@ namespace ChatWave.Forms
             parent.Controls.Add(sep);
         }
 
-        private void SendMessage(object sender, EventArgs e)
-        {
-            if (!string.IsNullOrWhiteSpace(messageBox.Text))
-            {
-                chatBox.Items.Add("Tu: " + messageBox.Text);
-                messageBox.Clear();
-            }
-        }
-
-        // ==================== METODE PENTRU POZE ====================
-
         private Image ByteArrayToImage(byte[] byteArray)
         {
-            if (byteArray == null || byteArray.Length == 0)
-                return null;
-
+            if (byteArray == null || byteArray.Length == 0) return null;
             using (MemoryStream ms = new MemoryStream(byteArray))
-            {
                 return Image.FromStream(ms);
-            }
         }
 
         private byte[] ImageToByteArray(Image image)
         {
-            if (image == null)
-                return null;
-
+            if (image == null) return null;
             using (MemoryStream ms = new MemoryStream())
             {
                 image.Save(ms, ImageFormat.Jpeg);
@@ -530,9 +582,7 @@ namespace ChatWave.Forms
                 Rectangle rect = new Rectangle(0, 0, size, size);
                 using (LinearGradientBrush brush = new LinearGradientBrush(rect,
                     Color.FromArgb(167, 147, 214), Color.FromArgb(130, 110, 180), 45))
-                {
                     g.FillEllipse(brush, rect);
-                }
 
                 string initial = username.Length > 0 ? username.Substring(0, 1).ToUpper() : "?";
                 using (Font avatarFont = new Font("Segoe UI", size / 2, FontStyle.Bold))
@@ -544,43 +594,31 @@ namespace ChatWave.Forms
                 }
 
                 using (Pen pen = new Pen(Color.White, 3))
-                {
                     g.DrawEllipse(pen, rect);
-                }
             }
             return bmp;
         }
 
         private Image GetUserImage(int userId)
         {
-            // Verifică în cache
             if (userImages.ContainsKey(userId))
                 return userImages[userId];
 
-            // Încarcă din baza de date
             byte[] imageData = UserRepository.GetProfileImage(userId);
             Image img = null;
 
             if (imageData != null && imageData.Length > 0)
             {
-                try
-                {
-                    img = ByteArrayToImage(imageData);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Eroare la conversie imagine: {ex.Message}");
-                }
+                try { img = ByteArrayToImage(imageData); }
+                catch (Exception ex) { Console.WriteLine($"Eroare imagine: {ex.Message}"); }
             }
 
             if (img == null)
             {
                 var user = allUsers.FirstOrDefault(u => u.Id == userId);
-                string username = user?.Username ?? "User";
-                img = GenerateDefaultAvatar(username, 100);
+                img = GenerateDefaultAvatar(user?.Username ?? "User", 100);
             }
 
-            // Salvează în cache
             userImages[userId] = img;
             return img;
         }
@@ -590,15 +628,9 @@ namespace ChatWave.Forms
             try
             {
                 Image img = GetUserImage(userId);
-                if (img != null)
-                {
-                    pb.Image = img;
-                }
+                if (img != null) pb.Image = img;
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Eroare la încărcarea imaginii: {ex.Message}");
-            }
+            catch (Exception ex) { Console.WriteLine($"Eroare PictureBox: {ex.Message}"); }
         }
 
         private void ChangeProfilePhoto()
@@ -619,30 +651,23 @@ namespace ChatWave.Forms
 
                             if (UserRepository.SaveProfileImage(currentUser.Id, imageData))
                             {
-                                // Șterge din cache pentru a reîncărca
                                 if (userImages.ContainsKey(currentUser.Id))
                                     userImages.Remove(currentUser.Id);
 
-                                // Reîncarcă imaginea
                                 LoadImageIntoPictureBox(pbAvatar, currentUser.Id);
-
-                                // Reîmprospătează lista de conversații
                                 conversations.Invalidate();
 
-                                MessageBox.Show("Poza de profil a fost actualizată cu succes!",
-                                    "Succes", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                MessageBox.Show("✅ Poza actualizată cu succes!", "Succes", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             }
                             else
                             {
-                                MessageBox.Show("Eroare la salvarea pozei în baza de date!",
-                                    "Eroare", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                MessageBox.Show("⚠ Eroare la salvarea pozei!", "Eroare", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Eroare la salvarea pozei: {ex.Message}",
-                            "Eroare", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"⚠ Eroare: {ex.Message}", "Eroare", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
