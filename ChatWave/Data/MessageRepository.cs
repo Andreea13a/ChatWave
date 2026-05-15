@@ -70,7 +70,7 @@ namespace ChatWave.Data
             return messages;
         }
 
-        public static List<Message> GetMessagesBetweenUsers(int user1Id, int user2Id)
+        public static List<Message> GetMessagesBetweenUsers(int user1Id, int user2Id, string user1Name = null, string user2Name = null)
         {
             var messages = new List<Message>();
             try
@@ -81,10 +81,14 @@ namespace ChatWave.Data
                     string query = @"SELECT * FROM Messages 
                         WHERE (SenderId = @user1 AND ReceiverId = @user2)
                         OR (SenderId = @user2 AND ReceiverId = @user1)
+                        OR (SenderName = @user1Name AND ReceiverName = @user2Name)
+                        OR (SenderName = @user2Name AND ReceiverName = @user1Name)
                         ORDER BY SentAt ASC";
                     var cmd = new MySqlCommand(query, conn);
                     cmd.Parameters.AddWithValue("@user1", user1Id);
                     cmd.Parameters.AddWithValue("@user2", user2Id);
+                    cmd.Parameters.AddWithValue("@user1Name", user1Name ?? "");
+                    cmd.Parameters.AddWithValue("@user2Name", user2Name ?? "");
                     var reader = cmd.ExecuteReader();
                     while (reader.Read())
                     {
@@ -92,10 +96,10 @@ namespace ChatWave.Data
                         {
                             Id = reader.GetInt32("Id"),
                             SenderId = reader.GetInt32("SenderId"),
-                            SenderName = reader.GetString("SenderName"),
-                            ReceiverId = reader.GetInt32("ReceiverId"),
-                            ReceiverName = reader.GetString("ReceiverName"),
-                            Text = reader.GetString("Text"),
+                            SenderName = reader.IsDBNull(reader.GetOrdinal("SenderName")) ? "" : reader.GetString("SenderName"),
+                            ReceiverId = reader.IsDBNull(reader.GetOrdinal("ReceiverId")) ? 0 : reader.GetInt32("ReceiverId"),
+                            ReceiverName = reader.IsDBNull(reader.GetOrdinal("ReceiverName")) ? "" : reader.GetString("ReceiverName"),
+                            Text = reader.IsDBNull(reader.GetOrdinal("Text")) ? "" : reader.GetString("Text"),
                             SentAt = reader.GetDateTime("SentAt")
                         });
                     }

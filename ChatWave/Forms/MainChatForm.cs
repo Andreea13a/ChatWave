@@ -27,6 +27,19 @@ namespace ChatWave.Forms
         Label lblPhoneRight;
         Button btnChangePhoto;
 
+        // Elemente de interfață principale
+        Panel header;
+        Panel chatHeader;
+        Panel inputPanel;
+        Panel dropdown;
+        Button menuBtn;
+        Label lblChatTitle;
+        Button sendButton;
+
+        // TIMER PENTRU REÎNCĂRCARE AUTOMATĂ (REAL-TIME CHAT)
+        private Timer chatTimer;
+        private int currentLoadedMessagesCount = 0;
+
         private Dictionary<int, Image> userImages = new Dictionary<int, Image>();
         private List<User> allUsers;
         private int selectedUserId = -1;
@@ -38,7 +51,22 @@ namespace ChatWave.Forms
             InitializeComponent();
             allUsers = UserRepository.GetAllUsers();
             DesignUI();
+
+            InitializeChatTimer();
             this.WindowState = FormWindowState.Maximized;
+        }
+
+        private void InitializeChatTimer()
+        {
+            chatTimer = new Timer();
+            chatTimer.Interval = 1000;
+            chatTimer.Tick += (s, e) => {
+                if (selectedUserId != -1)
+                {
+                    LoadMessages();
+                }
+            };
+            chatTimer.Start();
         }
 
         private void DesignUI()
@@ -47,12 +75,17 @@ namespace ChatWave.Forms
             Color movCard = Color.FromArgb(235, 230, 250);
             Color movButton = Color.FromArgb(160, 130, 210);
             bool isAdmin = currentUser.Role == "admin";
-
+            this.Controls.Clear();
             this.Text = "ChatWave - Chat";
             this.BackColor = Color.FromArgb(245, 245, 245);
 
-            // HEADER
-            Panel header = new Panel();
+            // Curățăm toate controalele pentru a evita suprapunerile accidentale
+            this.Controls.Clear();
+
+            // ==========================================
+            // 1. HEADER-UL PRINCIPAL (Bara de sus)
+            // ==========================================
+            header = new Panel();
             header.BackColor = movHeader;
             header.Height = 70;
             header.Dock = DockStyle.Top;
@@ -75,7 +108,7 @@ namespace ChatWave.Forms
             userLabel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             header.Controls.Add(userLabel);
 
-            Button menuBtn = new Button();
+            menuBtn = new Button();
             menuBtn.Text = "☰";
             menuBtn.Size = new Size(40, 35);
             menuBtn.Location = new Point(this.Width - 90, 18);
@@ -87,126 +120,8 @@ namespace ChatWave.Forms
             menuBtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             header.Controls.Add(menuBtn);
 
-            // DROPDOWN
-            Panel dropdown = new Panel();
-            dropdown.Size = new Size(200, isAdmin ? 210 : 130);
-            dropdown.AutoScroll = true;
-            dropdown.BackColor = Color.White;
-            dropdown.BorderStyle = BorderStyle.FixedSingle;
-            dropdown.Visible = false;
-            dropdown.Location = new Point(this.Width - 210, 70);
-            dropdown.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            dropdown.BringToFront();
-            this.Controls.Add(dropdown);
-
-            AddSectionLabel(dropdown, "👤 Cont", 6);
-            AddMenuButton(dropdown, "  Profilul meu", 40, movButton, (s, e) =>
-            {
-                dropdown.Visible = false;
-                ShowUserProfile(currentUser.Id);
-            });
-            AddMenuButton(dropdown, "  Setări", 75, movButton, (s, e) =>
-            {
-                dropdown.Visible = false;
-                new SettingsForm(currentUser).ShowDialog();
-            });
-            AddMenuButton(dropdown, "  🔓 Logout", 100, Color.FromArgb(192, 57, 43), (s, e) =>
-            {
-                dropdown.Visible = false;
-                this.Hide();
-                new LoginForm().Show();
-            });
-
-            if (isAdmin)
-            {
-                AddSeparator(dropdown, 135);
-                AddSectionLabel(dropdown, "🛡️ Admin", 142);
-                AddMenuButton(dropdown, "  Dashboard", 162, movButton, (s, e) =>
-                {
-                    dropdown.Visible = false;
-                    new AdminDashboard().Show();
-                });
-            }
-
-            menuBtn.Click += (s, e) =>
-            {
-                dropdown.Visible = !dropdown.Visible;
-                dropdown.BringToFront();
-            };
-            this.Click += (s, e) => dropdown.Visible = false;
-
             // ==========================================
-            // 1. PANEL PROFIL DREAPTA (Se adaugă primul)
-            // ==========================================
-            pnlUserProfile = new Panel();
-            pnlUserProfile.Width = 250;
-            pnlUserProfile.Dock = DockStyle.Right;
-            pnlUserProfile.BackColor = movCard;
-            pnlUserProfile.Visible = false;
-            this.Controls.Add(pnlUserProfile);
-
-            pbAvatar = new PictureBox();
-            pbAvatar.Size = new Size(100, 100);
-            pbAvatar.Location = new Point((pnlUserProfile.Width - 100) / 2, 20);
-            pbAvatar.SizeMode = PictureBoxSizeMode.Zoom;
-            pbAvatar.BackColor = movHeader;
-            pbAvatar.Cursor = Cursors.Hand;
-            pbAvatar.Click += (s, e) =>
-            {
-                if (lblProfileName.Text == currentUser.Username)
-                    ChangeProfilePhoto();
-            };
-            pnlUserProfile.Controls.Add(pbAvatar);
-
-            btnChangePhoto = new Button();
-            btnChangePhoto.Text = "📷 Schimbă poza";
-            btnChangePhoto.Size = new Size(120, 30);
-            btnChangePhoto.Location = new Point((pnlUserProfile.Width - 120) / 2, 130);
-            btnChangePhoto.BackColor = movButton;
-            btnChangePhoto.ForeColor = Color.White;
-            btnChangePhoto.FlatStyle = FlatStyle.Flat;
-            btnChangePhoto.Font = new Font("Segoe UI", 9);
-            btnChangePhoto.Click += (s, e) => ChangeProfilePhoto();
-            pnlUserProfile.Controls.Add(btnChangePhoto);
-
-            lblProfileName = new Label();
-            lblProfileName.Text = "";
-            lblProfileName.Font = new Font("Segoe UI", 14, FontStyle.Bold);
-            lblProfileName.ForeColor = Color.FromArgb(90, 40, 160);
-            lblProfileName.Location = new Point(10, 175);
-            lblProfileName.Size = new Size(pnlUserProfile.Width - 20, 30);
-            lblProfileName.TextAlign = ContentAlignment.MiddleCenter;
-            pnlUserProfile.Controls.Add(lblProfileName);
-
-            lblRoleRight = new Label();
-            lblRoleRight.Text = "";
-            lblRoleRight.Font = new Font("Segoe UI", 10);
-            lblRoleRight.ForeColor = Color.FromArgb(120, 80, 180);
-            lblRoleRight.Location = new Point(10, 210);
-            lblRoleRight.Size = new Size(pnlUserProfile.Width - 20, 25);
-            lblRoleRight.TextAlign = ContentAlignment.MiddleCenter;
-            pnlUserProfile.Controls.Add(lblRoleRight);
-
-            lblEmailRight = new Label();
-            lblEmailRight.Text = "";
-            lblEmailRight.Font = new Font("Segoe UI", 9);
-            lblEmailRight.ForeColor = Color.FromArgb(80, 80, 80);
-            lblEmailRight.Location = new Point(10, 245);
-            lblEmailRight.Size = new Size(pnlUserProfile.Width - 20, 20);
-            lblEmailRight.TextAlign = ContentAlignment.MiddleCenter;
-            pnlUserProfile.Controls.Add(lblEmailRight);
-
-            lblPhoneRight = new Label();
-            lblPhoneRight.Text = "";
-            lblPhoneRight.Font = new Font("Segoe UI", 9);
-            lblPhoneRight.ForeColor = Color.FromArgb(80, 80, 80);
-            lblPhoneRight.Location = new Point(10, 275);
-            lblPhoneRight.Size = new Size(pnlUserProfile.Width - 20, 20);
-            lblPhoneRight.TextAlign = ContentAlignment.MiddleCenter;
-            pnlUserProfile.Controls.Add(lblPhoneRight);
-
-            // ==========================================
-            // 2. LEFT PANEL (Se adaugă al doilea)
+            // 2. PANELUL DIN STÂNGA (Lista de utilizatori)
             // ==========================================
             Panel leftPanel = new Panel();
             leftPanel.Width = 300;
@@ -246,7 +161,7 @@ namespace ChatWave.Forms
 
             conversations = new ListBox();
             conversations.Width = leftPanel.Width - 30;
-            conversations.Height = leftPanel.Height - 100;
+            conversations.Height = leftPanel.Height - 160;
             conversations.Location = new Point(15, 90);
             conversations.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             conversations.BackColor = Color.White;
@@ -302,7 +217,6 @@ namespace ChatWave.Forms
                     e.Bounds.Right, e.Bounds.Bottom - 1);
             };
 
-            // Încarcă utilizatorii
             var allUsernames = new List<string>();
             foreach (var user in allUsers)
             {
@@ -325,27 +239,87 @@ namespace ChatWave.Forms
             };
 
             // ==========================================
-            // 3. CHAT PANEL (Se adaugă ULTIMUL - Dock Fill)
+            // 3. PANELUL DIN DREAPTA (Profilul utilizatorului)
             // ==========================================
-            Panel chatPanel = new Panel();
-            chatPanel.Dock = DockStyle.Fill;
-            chatPanel.BackColor = Color.White;
-            this.Controls.Add(chatPanel);
-            chatPanel.BringToFront();
+            pnlUserProfile = new Panel();
+            pnlUserProfile.Width = 260;
+            pnlUserProfile.Dock = DockStyle.Right;
+            pnlUserProfile.BackColor = movCard;
+            pnlUserProfile.Visible = false;
+            this.Controls.Add(pnlUserProfile);
 
-            // INPUT PANEL — Dock Bottom
-            Panel inputPanel = new Panel();
+            pbAvatar = new PictureBox();
+            pbAvatar.Size = new Size(110, 110);
+            pbAvatar.Location = new Point((pnlUserProfile.Width - 110) / 2, 30);
+            pbAvatar.SizeMode = PictureBoxSizeMode.Zoom;
+            pbAvatar.BackColor = Color.Gainsboro;
+            pbAvatar.Cursor = Cursors.Hand;
+            pbAvatar.Click += (s, e) =>
+            {
+                if (lblProfileName.Text == currentUser.Username)
+                    ChangeProfilePhoto();
+            };
+            pnlUserProfile.Controls.Add(pbAvatar);
+
+            btnChangePhoto = new Button();
+            btnChangePhoto.Text = "📷 Schimbă poza";
+            btnChangePhoto.Size = new Size(120, 30);
+            btnChangePhoto.Location = new Point((pnlUserProfile.Width - 120) / 2, 150);
+            btnChangePhoto.BackColor = movButton;
+            btnChangePhoto.ForeColor = Color.White;
+            btnChangePhoto.FlatStyle = FlatStyle.Flat;
+            btnChangePhoto.Font = new Font("Segoe UI", 9);
+            btnChangePhoto.Click += (s, e) => ChangeProfilePhoto();
+            pnlUserProfile.Controls.Add(btnChangePhoto);
+
+            lblProfileName = new Label();
+            lblProfileName.Text = "";
+            lblProfileName.Font = new Font("Segoe UI", 14, FontStyle.Bold);
+            lblProfileName.ForeColor = Color.FromArgb(90, 40, 160);
+            lblProfileName.Location = new Point(10, 200);
+            lblProfileName.Size = new Size(pnlUserProfile.Width - 20, 30);
+            lblProfileName.TextAlign = ContentAlignment.MiddleCenter;
+            pnlUserProfile.Controls.Add(lblProfileName);
+
+            lblRoleRight = new Label();
+            lblRoleRight.Text = "";
+            lblRoleRight.Font = new Font("Segoe UI", 10);
+            lblRoleRight.ForeColor = Color.FromArgb(120, 80, 180);
+            lblRoleRight.Location = new Point(10, 235);
+            lblRoleRight.Size = new Size(pnlUserProfile.Width - 20, 25);
+            lblRoleRight.TextAlign = ContentAlignment.MiddleCenter;
+            pnlUserProfile.Controls.Add(lblRoleRight);
+
+            lblEmailRight = new Label();
+            lblEmailRight.Text = "";
+            lblEmailRight.Font = new Font("Segoe UI", 9);
+            lblEmailRight.ForeColor = Color.FromArgb(80, 80, 80);
+            lblEmailRight.Location = new Point(10, 270);
+            lblEmailRight.Size = new Size(pnlUserProfile.Width - 20, 20);
+            lblEmailRight.TextAlign = ContentAlignment.MiddleCenter;
+            pnlUserProfile.Controls.Add(lblEmailRight);
+
+            lblPhoneRight = new Label();
+            lblPhoneRight.Text = "";
+            lblPhoneRight.Font = new Font("Segoe UI", 9);
+            lblPhoneRight.ForeColor = Color.FromArgb(80, 80, 80);
+            lblPhoneRight.Location = new Point(10, 300);
+            lblPhoneRight.Size = new Size(pnlUserProfile.Width - 20, 20);
+            lblPhoneRight.TextAlign = ContentAlignment.MiddleCenter;
+            pnlUserProfile.Controls.Add(lblPhoneRight);
+
+            // ==========================================
+            // 4. BARA DE INPUT DE JOS (Ancorată fix la baza ferestrei)
+            // ==========================================
+            inputPanel = new Panel();
             inputPanel.Height = 65;
             inputPanel.Dock = DockStyle.Bottom;
             inputPanel.BackColor = Color.FromArgb(235, 230, 250);
-            chatPanel.Controls.Add(inputPanel);
+            this.Controls.Add(inputPanel);
 
-            // BUTTON SEND
-            Button sendButton = new Button();
+            sendButton = new Button();
             sendButton.Text = "✉ Trimite";
             sendButton.Size = new Size(110, 35);
-            sendButton.Location = new Point(chatPanel.Width - 130, 15);
-            sendButton.Anchor = AnchorStyles.Right | AnchorStyles.Top;
             sendButton.BackColor = Color.FromArgb(167, 147, 214);
             sendButton.ForeColor = Color.White;
             sendButton.FlatStyle = FlatStyle.Flat;
@@ -355,11 +329,7 @@ namespace ChatWave.Forms
             sendButton.Click += SendMessage;
             inputPanel.Controls.Add(sendButton);
 
-            // TEXTBOX MESSAGE
             messageBox = new TextBox();
-            messageBox.Location = new Point(15, 15);
-            messageBox.Size = new Size(chatPanel.Width - 160, 35);
-            messageBox.Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
             messageBox.Font = new Font("Segoe UI", 11);
             messageBox.BorderStyle = BorderStyle.FixedSingle;
             messageBox.BackColor = Color.White;
@@ -374,14 +344,16 @@ namespace ChatWave.Forms
                 }
             };
 
-            // CHAT HEADER — Dock Top
-            Panel chatHeader = new Panel();
+            // ==========================================
+            // 5. TITLUL CONVERSAȚIEI CURENTE (Sub Header)
+            // ==========================================
+            chatHeader = new Panel();
             chatHeader.Height = 50;
             chatHeader.Dock = DockStyle.Top;
             chatHeader.BackColor = Color.FromArgb(245, 242, 255);
-            chatPanel.Controls.Add(chatHeader);
+            this.Controls.Add(chatHeader);
 
-            Label lblChatTitle = new Label();
+            lblChatTitle = new Label();
             lblChatTitle.Text = "Selectează un utilizator";
             lblChatTitle.Font = new Font("Segoe UI", 12, FontStyle.Bold);
             lblChatTitle.ForeColor = Color.FromArgb(90, 40, 160);
@@ -389,35 +361,74 @@ namespace ChatWave.Forms
             lblChatTitle.AutoSize = true;
             chatHeader.Controls.Add(lblChatTitle);
 
-            // CHAT BOX — Dock Fill
+            // ==========================================
+            // 6. ZONA CENTRALĂ DE MESAJE (Ocupă restul spațiului rămas)
+            // ==========================================
             chatBox = new ListBox();
             chatBox.Dock = DockStyle.Fill;
             chatBox.BackColor = Color.FromArgb(250, 248, 255);
             chatBox.BorderStyle = BorderStyle.None;
             chatBox.Font = new Font("Segoe UI", 10);
-            chatBox.DrawMode = DrawMode.OwnerDrawFixed;
+            chatBox.DrawMode = DrawMode.Normal;
             chatBox.ItemHeight = 35;
-            chatPanel.Controls.Add(chatBox);
+            chatBox.ForeColor = Color.FromArgb(50, 50, 50);
+            this.Controls.Add(chatBox);
 
-            inputPanel.BringToFront();
+            // ==========================================
+            // 7. MENIUL DROPDOWN (Plasat deasupra tuturor elementelor)
+            // ==========================================
+            dropdown = new Panel();
+            dropdown.Size = new Size(200, isAdmin ? 210 : 130);
+            dropdown.BackColor = Color.White;
+            dropdown.BorderStyle = BorderStyle.FixedSingle;
+            dropdown.Visible = false;
+            this.Controls.Add(dropdown);
 
-            chatBox.DrawItem += (s, e) =>
+            AddSectionLabel(dropdown, "👤 Cont", 6);
+            AddMenuButton(dropdown, "  Profilul meu", 40, movButton, (s, e) =>
             {
-                if (e.Index < 0) return;
-                string item = chatBox.Items[e.Index].ToString();
-                bool isMine = item.StartsWith("[Tu]");
+                dropdown.Visible = false;
+                ShowUserProfile(currentUser.Id);
+            });
+            AddMenuButton(dropdown, "  Setări", 75, movButton, (s, e) =>
+            {
+                dropdown.Visible = false;
+                new SettingsForm(currentUser).ShowDialog();
+            });
+            AddMenuButton(dropdown, "  🔓 Logout", 100, Color.FromArgb(192, 57, 43), (s, e) =>
+            {
+                dropdown.Visible = false;
+                chatTimer.Stop();
+                this.Hide();
+                new LoginForm().Show();
+            });
 
-                e.Graphics.FillRectangle(
-                    new SolidBrush(isMine ? Color.FromArgb(235, 225, 255) : Color.FromArgb(250, 248, 255)),
-                    e.Bounds);
+            if (isAdmin)
+            {
+                AddSeparator(dropdown, 135);
+                AddSectionLabel(dropdown, "🛡️ Admin", 142);
+                AddMenuButton(dropdown, "  Dashboard", 162, movButton, (s, e) =>
+                {
+                    dropdown.Visible = false;
+                    new AdminDashboard().Show();
+                });
+            }
 
-                e.Graphics.DrawString(item,
-                    new Font("Segoe UI", 10),
-                    new SolidBrush(isMine ? Color.FromArgb(90, 40, 160) : Color.FromArgb(50, 50, 50)),
-                    new Rectangle(e.Bounds.Left + 10, e.Bounds.Top + 5, e.Bounds.Width - 20, e.Bounds.Height - 5));
+            // Gestionare comportament buton meniu
+            menuBtn.Click += (s, e) =>
+            {
+                dropdown.Visible = !dropdown.Visible;
+                if (dropdown.Visible) dropdown.BringToFront();
             };
 
-            // SELECT USER
+            // Ascundere meniu la click pe zone libere
+            this.Click += (s, e) => dropdown.Visible = false;
+            chatBox.Click += (s, e) => dropdown.Visible = false;
+
+            // Executăm manual calculul inițial de poziționare a elementelor din interior
+            UpdateInternalLayout();
+
+            // Selectare utilizator din listă
             conversations.SelectedIndexChanged += (s, e) =>
             {
                 if (conversations.SelectedItem == null) return;
@@ -426,42 +437,75 @@ namespace ChatWave.Forms
                 if (user != null)
                 {
                     selectedUserId = user.Id;
+                    currentLoadedMessagesCount = -1;
                     ShowUserProfile(user.Id);
                     LoadMessages();
                     lblChatTitle.Text = "💬 " + selectedUsername;
                 }
             };
 
-            // RESIZE EVENT
+            // Recalculare dimensiuni la redimensionarea ferestrei
             this.Resize += (s, e) =>
             {
-                userLabel.Location = new Point(this.Width - 180, 25);
-                menuBtn.Location = new Point(this.Width - 90, 18);
-                dropdown.Location = new Point(this.Width - 210, 70);
-
-                if (messageBox != null && sendButton != null && inputPanel != null)
-                {
-                    sendButton.Location = new Point(inputPanel.Width - 130, 15);
-                    messageBox.Width = inputPanel.Width - 160;
-                }
+                UpdateInternalLayout();
             };
+        }
+
+        // Metodă dedicată pentru recalcularea pozițiilor geometrice, eliminând suprapunerile
+        private void UpdateInternalLayout()
+        {
+            if (header == null) return;
+
+            // Ajustare Header din dreapta sus
+            menuBtn.Location = new Point(header.Width - 60, 18);
+            dropdown.Location = new Point(this.Width - 230, 70);
+            dropdown.BringToFront();
+
+            // Sincronizare lățime elemente din bara de input de jos
+            if (inputPanel != null && messageBox != null && sendButton != null)
+            {
+                sendButton.Location = new Point(inputPanel.Width - 130, 15);
+                messageBox.Location = new Point(15, 15);
+                messageBox.Width = inputPanel.Width - 160;
+            }
         }
 
         private void LoadMessages()
         {
-            chatBox.Items.Clear();
             if (selectedUserId == -1) return;
 
-            var messages = MessageRepository.GetMessagesBetweenUsers(currentUser.Id, selectedUserId);
+            var messages = MessageRepository.GetMessagesBetweenUsers(
+                currentUser.Id,
+                selectedUserId,
+                currentUser.Username,
+                selectedUsername);
+
+            if (messages.Count == currentLoadedMessagesCount) return;
+
+            chatBox.Items.Clear();
+            currentLoadedMessagesCount = messages.Count;
 
             foreach (var msg in messages)
             {
-                string prefix = msg.SenderId == currentUser.Id ? "[Tu]" : "[" + msg.SenderName + "]";
-                chatBox.Items.Add($"{prefix} {msg.SentAt:HH:mm}: {msg.Text}");
+                AddMessageToChat(msg);
             }
 
             if (chatBox.Items.Count > 0)
                 chatBox.TopIndex = chatBox.Items.Count - 1;
+        }
+
+        private void AddMessageToChat(Message msg)
+        {
+            string prefix = msg.SenderId == currentUser.Id ? "[Tu]" : "[" + msg.SenderName + "]";
+            chatBox.Items.Add($"{prefix} {msg.SentAt:HH:mm}: {msg.Text}");
+
+            if (chatBox.Items.Count > 0)
+                chatBox.TopIndex = chatBox.Items.Count - 1;
+
+            chatBox.Invalidate();
+            chatBox.Refresh();
+            chatBox.BringToFront();
+            dropdown.BringToFront();
         }
 
         private void ShowUserProfile(int userId)
@@ -511,7 +555,8 @@ namespace ChatWave.Forms
             if (success)
             {
                 messageBox.Clear();
-                LoadMessages();
+                AddMessageToChat(message);
+                currentLoadedMessagesCount = chatBox.Items.Count;
                 messageBox.Focus();
             }
             else
@@ -682,6 +727,16 @@ namespace ChatWave.Forms
                 g.DrawImage(image, 0, 0, width, height);
             }
             return resized;
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (chatTimer != null)
+            {
+                chatTimer.Stop();
+                chatTimer.Dispose();
+            }
+            base.OnFormClosing(e);
         }
     }
 }
