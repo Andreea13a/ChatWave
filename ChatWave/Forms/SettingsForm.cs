@@ -7,6 +7,7 @@ namespace ChatWave.Forms
 {
     public partial class SettingsForm : Form
     {
+        public event Action ProfileUpdated;
         private LoggedUser currentUser;
 
         private Panel pnlHeader;
@@ -293,7 +294,7 @@ namespace ChatWave.Forms
                 currentUser.Email = txtEmail.Text.Trim();
                 currentUser.Phone = txtPhone.Text.Trim();
                 lblProfileSuccess.Text = "✅ Profil actualizat cu succes!";
-
+                ProfileUpdated?.Invoke();
                 if (this.Owner is MainChatForm mainForm)
                     mainForm.RefreshUsers();
             }
@@ -342,9 +343,11 @@ namespace ChatWave.Forms
             {
                 currentUser.Password = txtNewPassword.Text;
                 lblPasswordSuccess.Text = "✅ Parola schimbată cu succes!";
+                ProfileUpdated?.Invoke();
                 txtOldPassword.Text = "";
                 txtNewPassword.Text = "";
                 txtConfirmPassword.Text = "";
+                ProfileUpdated?.Invoke();
             }
             else
             {

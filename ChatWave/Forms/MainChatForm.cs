@@ -407,7 +407,14 @@ namespace ChatWave.Forms
             AddMenuButton(dropdown, "  Setări", 75, (s, e) =>
             {
                 dropdown.Visible = false;
-                new SettingsForm(currentUser).ShowDialog();
+                using (var settingsForm = new SettingsForm(currentUser))
+                {
+                    settingsForm.ProfileUpdated += () =>
+                    {
+                        RefreshCurrentUserProfile();
+                    };
+                    settingsForm.ShowDialog();
+                }
                 ShowUserProfile(currentUser.Id);
             });
             AddMenuButton(dropdown, "  🔓 Logout", 100, Color.FromArgb(192, 57, 43), (s, e) =>
@@ -606,6 +613,33 @@ namespace ChatWave.Forms
             }
         }
 
+        // METODA PENTRU ACTUALIZAREA PROFILULUI
+        public void RefreshCurrentUserProfile()
+        {
+            var updatedUser = UserRepository.GetUserById(currentUser.Id);
+            if (updatedUser != null)
+            {
+                currentUser.Email = updatedUser.Email;
+                currentUser.Phone = updatedUser.Phone;
+                currentUser.Username = updatedUser.Username;
+
+                if (pnlUserProfile.Visible && lblProfileName.Text == currentUser.Username)
+                {
+                    lblEmailRight.Text = "📧 " + (currentUser.Email ?? "-");
+                    lblPhoneRight.Text = "📱 " + (currentUser.Phone ?? "-");
+                }
+
+                if (userLabel != null)
+                {
+                    userLabel.Text = "👤 " + currentUser.Username;
+                }
+            }
+
+            allUsers = UserRepository.GetAllUsers();
+            conversations.Invalidate();
+        }
+
+        // METODA REFRESH THEME
         public void RefreshTheme()
         {
             ThemeManager.ApplyTheme(this);
@@ -625,12 +659,19 @@ namespace ChatWave.Forms
             {
                 conversations.BackColor = ThemeManager.IsDarkMode ? Color.FromArgb(40, 40, 60) : Color.White;
                 conversations.ForeColor = ThemeManager.TextPrimary;
+                conversations.Refresh();
                 conversations.Invalidate();
+
+                int selectedIndex = conversations.SelectedIndex;
+                conversations.SelectedIndex = -1;
+                conversations.SelectedIndex = selectedIndex;
             }
             if (chatBox != null)
             {
                 chatBox.BackColor = ThemeManager.ChatBackground;
                 chatBox.ForeColor = ThemeManager.TextPrimary;
+                chatBox.Refresh();
+                chatBox.Invalidate();
             }
             if (inputPanel != null) inputPanel.BackColor = ThemeManager.CardBackground;
             if (chatHeader != null) chatHeader.BackColor = ThemeManager.IsDarkMode ? Color.FromArgb(40, 40, 60) : Color.FromArgb(245, 242, 255);
@@ -653,8 +694,30 @@ namespace ChatWave.Forms
                 messageBox.ForeColor = ThemeManager.TextPrimary;
             }
 
-            this.Invalidate();
             this.Refresh();
+            this.Invalidate(true);
+
+            if (conversations != null && conversations.Items.Count > 0)
+            {
+                string selectedUsername = conversations.SelectedItem?.ToString();
+                int currentIndex = conversations.SelectedIndex;
+
+                conversations.BeginUpdate();
+                conversations.EndUpdate();
+
+                if (!string.IsNullOrEmpty(selectedUsername))
+                {
+                    for (int i = 0; i < conversations.Items.Count; i++)
+                    {
+                        if (conversations.Items[i].ToString() == selectedUsername)
+                        {
+                            conversations.SelectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+
             conversations?.Invalidate();
             chatBox?.Invalidate();
         }
