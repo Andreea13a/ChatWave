@@ -33,8 +33,10 @@ namespace ChatWave.Forms
         Panel inputPanel;
         Panel dropdown;
         Button menuBtn;
+        Button btnNewChat;
         Label lblChatTitle;
         Button sendButton;
+        Label userLabel;
 
         // TIMER PENTRU REÎNCĂRCARE AUTOMATĂ (REAL-TIME CHAT)
         private Timer chatTimer;
@@ -44,6 +46,10 @@ namespace ChatWave.Forms
         private List<User> allUsers;
         private int selectedUserId = -1;
         private string selectedUsername = "";
+
+        // Variabile pentru conversația curentă
+        private int currentConversationPartnerId = -1;
+        private string currentConversationPartnerName = "";
 
         public MainChatForm(LoggedUser user)
         {
@@ -63,9 +69,9 @@ namespace ChatWave.Forms
             chatTimer = new Timer();
             chatTimer.Interval = 1000;
             chatTimer.Tick += (s, e) => {
-                if (selectedUserId != -1)
+                if (currentConversationPartnerId != -1)
                 {
-                    LoadMessages();
+                    LoadMessagesWithUser(currentConversationPartnerId, currentConversationPartnerName);
                 }
             };
             chatTimer.Start();
@@ -77,15 +83,13 @@ namespace ChatWave.Forms
             this.Controls.Clear();
             this.Text = "ChatWave - Chat";
 
-            // Curățăm toate controalele pentru a evita suprapunerile accidentale
-            this.Controls.Clear();
-
             // ==========================================
             // 1. HEADER-UL PRINCIPAL (Bara de sus)
             // ==========================================
             header = new Panel();
             header.Height = 70;
             header.Dock = DockStyle.Top;
+            header.BackColor = ThemeManager.Header;
             this.Controls.Add(header);
 
             Label title = new Label();
@@ -93,10 +97,30 @@ namespace ChatWave.Forms
             title.ForeColor = Color.White;
             title.Font = new Font("Segoe UI", 16, FontStyle.Bold);
             title.AutoSize = true;
-            title.Location = new Point(20, 20);
+            title.Location = new Point(20, 22);
             header.Controls.Add(title);
 
-            Label userLabel = new Label();
+            // BUTON NOU CONVERSATIE
+            btnNewChat = new Button();
+            btnNewChat.Text = "+ Conversație nouă";
+            btnNewChat.Size = new Size(180, 38);
+            btnNewChat.Location = new Point(200, 16);
+            btnNewChat.BackColor = Color.FromArgb(100, 80, 150);
+            btnNewChat.FlatStyle = FlatStyle.Flat;
+            btnNewChat.FlatAppearance.BorderSize = 0;
+            btnNewChat.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            btnNewChat.ForeColor = Color.White;
+            btnNewChat.Cursor = Cursors.Hand;
+            btnNewChat.Click += BtnNewChat_Click;
+
+            // Efecte hover
+            btnNewChat.MouseEnter += (s, e) => btnNewChat.BackColor = Color.FromArgb(80, 60, 130);
+            btnNewChat.MouseLeave += (s, e) => btnNewChat.BackColor = Color.FromArgb(100, 80, 150);
+
+            header.Controls.Add(btnNewChat);
+
+            // Label utilizator
+            userLabel = new Label();
             userLabel.Text = "👤 " + currentUser.Username;
             userLabel.ForeColor = Color.White;
             userLabel.Font = new Font("Segoe UI", 10);
@@ -105,14 +129,23 @@ namespace ChatWave.Forms
             userLabel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             header.Controls.Add(userLabel);
 
+            // BUTON MENIU (cele trei liniute)
             menuBtn = new Button();
             menuBtn.Text = "☰";
-            menuBtn.Size = new Size(40, 35);
-            menuBtn.Location = new Point(this.Width - 90, 18);
+            menuBtn.Size = new Size(40, 38);
+            menuBtn.Location = new Point(this.Width - 90, 16);
+            menuBtn.BackColor = Color.FromArgb(100, 80, 150);
             menuBtn.FlatStyle = FlatStyle.Flat;
             menuBtn.FlatAppearance.BorderSize = 0;
-            menuBtn.Font = new Font("Segoe UI", 14);
+            menuBtn.Font = new Font("Segoe UI", 14, FontStyle.Bold);
+            menuBtn.ForeColor = Color.White;
+            menuBtn.Cursor = Cursors.Hand;
             menuBtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
+            // Efecte hover
+            menuBtn.MouseEnter += (s, e) => menuBtn.BackColor = Color.FromArgb(80, 60, 130);
+            menuBtn.MouseLeave += (s, e) => menuBtn.BackColor = Color.FromArgb(100, 80, 150);
+
             header.Controls.Add(menuBtn);
 
             // ==========================================
@@ -124,7 +157,7 @@ namespace ChatWave.Forms
             this.Controls.Add(leftPanel);
 
             Label convLabel = new Label();
-            convLabel.Text = "👥 Toți utilizatorii";
+            convLabel.Text = "👥 Conversațiile mele";
             convLabel.Font = new Font("Segoe UI", 12, FontStyle.Bold);
             convLabel.Location = new Point(15, 15);
             convLabel.AutoSize = true;
@@ -134,19 +167,19 @@ namespace ChatWave.Forms
             searchBox.Size = new Size(leftPanel.Width - 30, 30);
             searchBox.Location = new Point(15, 50);
             searchBox.Font = new Font("Segoe UI", 10);
-            searchBox.Text = "🔍 Caută utilizator...";
+            searchBox.Text = "🔍 Caută conversație...";
             searchBox.BorderStyle = BorderStyle.FixedSingle;
             leftPanel.Controls.Add(searchBox);
 
             searchBox.GotFocus += (s, e) =>
             {
-                if (searchBox.Text == "🔍 Caută utilizator...") searchBox.Text = "";
+                if (searchBox.Text == "🔍 Caută conversație...") searchBox.Text = "";
             };
             searchBox.LostFocus += (s, e) =>
             {
                 if (string.IsNullOrWhiteSpace(searchBox.Text))
                 {
-                    searchBox.Text = "🔍 Caută utilizator...";
+                    searchBox.Text = "🔍 Caută conversație...";
                 }
             };
 
@@ -213,6 +246,7 @@ namespace ChatWave.Forms
                     e.Bounds.Right, e.Bounds.Bottom - 1);
             };
 
+            // Încarcă toți utilizatorii în listă (excludem utilizatorul curent)
             var allUsernames = new List<string>();
             foreach (var user in allUsers)
             {
@@ -227,7 +261,7 @@ namespace ChatWave.Forms
             searchBox.TextChanged += (s, e) =>
             {
                 string filter = searchBox.Text.ToLower();
-                if (filter == "🔍 caută utilizator...") return;
+                if (filter == "🔍 caută conversație...") return;
                 conversations.Items.Clear();
                 foreach (var name in allUsernames)
                     if (name.ToLower().Contains(filter))
@@ -406,24 +440,8 @@ namespace ChatWave.Forms
             this.Click += (s, e) => dropdown.Visible = false;
             chatBox.Click += (s, e) => dropdown.Visible = false;
 
-            // Executăm manual calculul inițial de poziționare a elementelor din interior
-            UpdateInternalLayout();
-
             // Selectare utilizator din listă
-            conversations.SelectedIndexChanged += (s, e) =>
-            {
-                if (conversations.SelectedItem == null) return;
-                selectedUsername = conversations.SelectedItem.ToString();
-                var user = allUsers.FirstOrDefault(u => u.Username == selectedUsername);
-                if (user != null)
-                {
-                    selectedUserId = user.Id;
-                    currentLoadedMessagesCount = -1;
-                    ShowUserProfile(user.Id);
-                    LoadMessages();
-                    lblChatTitle.Text = "💬 " + selectedUsername;
-                }
-            };
+            conversations.SelectedIndexChanged += Conversations_SelectedIndexChanged;
 
             // Recalculare dimensiuni la redimensionarea ferestrei
             this.Resize += (s, e) =>
@@ -432,15 +450,27 @@ namespace ChatWave.Forms
             };
         }
 
-        // Metodă dedicată pentru recalcularea pozițiilor geometrice, eliminând suprapunerile
+        // Metodă pentru recalcularea pozițiilor
         private void UpdateInternalLayout()
         {
             if (header == null) return;
 
-            // Ajustare Header din dreapta sus
-            menuBtn.Location = new Point(header.Width - 60, 18);
-            dropdown.Location = new Point(this.Width - 230, 70);
-            dropdown.BringToFront();
+            // Actualizează doar elementele care trebuie să fie în dreapta
+            if (menuBtn != null)
+            {
+                menuBtn.Location = new Point(header.Width - 90, 16);
+            }
+
+            if (userLabel != null)
+            {
+                userLabel.Location = new Point(header.Width - 180, 25);
+            }
+
+            if (dropdown != null)
+            {
+                dropdown.Location = new Point(this.Width - 230, 70);
+                dropdown.BringToFront();
+            }
 
             // Sincronizare lățime elemente din bara de input de jos
             if (inputPanel != null && messageBox != null && sendButton != null)
@@ -451,18 +481,151 @@ namespace ChatWave.Forms
             }
         }
 
-        // METODA REFRESH THEME - ACEASTA ESTE CHEIA
+        // ==========================================
+        // METODE PENTRU CONVERSAȚII
+        // ==========================================
+
+        private void BtnNewChat_Click(object sender, EventArgs e)
+        {
+            using (var newChatForm = new NewConversationForm(currentUser))
+            {
+                if (newChatForm.ShowDialog() == DialogResult.OK)
+                {
+                    int selectedUserId = newChatForm.SelectedUserId;
+                    string selectedUsername = newChatForm.SelectedUsername;
+
+                    // Verifică dacă există deja o conversație
+                    var existingMessages = MessageRepository.GetMessagesBetweenUsers(
+                        currentUser.Id,
+                        selectedUserId,
+                        currentUser.Username,
+                        selectedUsername);
+
+                    if (existingMessages.Count > 0)
+                    {
+                        DialogResult result = MessageBox.Show(
+                            $"Ai deja o conversație cu {selectedUsername}. Vrei să o deschizi?",
+                            "Conversație existentă",
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Question);
+
+                        if (result == DialogResult.Yes)
+                        {
+                            currentConversationPartnerId = selectedUserId;
+                            currentConversationPartnerName = selectedUsername;
+                            this.selectedUserId = selectedUserId;
+                            this.selectedUsername = selectedUsername;
+
+                            LoadMessagesWithUser(selectedUserId, selectedUsername);
+                            lblChatTitle.Text = "💬 " + selectedUsername;
+                            ShowUserProfile(selectedUserId);
+                            SelectUserInList(selectedUsername);
+                        }
+                    }
+                    else
+                    {
+                        DialogResult result = MessageBox.Show(
+                            $"Începi o conversație cu {selectedUsername}?",
+                            "Conversație nouă",
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Question);
+
+                        if (result == DialogResult.Yes)
+                        {
+                            currentConversationPartnerId = selectedUserId;
+                            currentConversationPartnerName = selectedUsername;
+                            this.selectedUserId = selectedUserId;
+                            this.selectedUsername = selectedUsername;
+
+                            chatBox.Items.Clear();
+                            lblChatTitle.Text = "💬 " + selectedUsername;
+                            ShowUserProfile(selectedUserId);
+                            AddSystemMessage($"Ai început o conversație cu {selectedUsername}");
+                            SelectUserInList(selectedUsername);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void LoadMessagesWithUser(int userId, string username)
+        {
+            var messages = MessageRepository.GetMessagesBetweenUsers(
+                currentUser.Id,
+                userId,
+                currentUser.Username,
+                username);
+
+            if (messages.Count == currentLoadedMessagesCount && currentLoadedMessagesCount > 0) return;
+
+            chatBox.Items.Clear();
+            currentLoadedMessagesCount = messages.Count;
+
+            foreach (var msg in messages)
+            {
+                AddMessageToChat(msg);
+            }
+
+            if (chatBox.Items.Count > 0)
+                chatBox.TopIndex = chatBox.Items.Count - 1;
+        }
+
+        private void SelectUserInList(string username)
+        {
+            for (int i = 0; i < conversations.Items.Count; i++)
+            {
+                if (conversations.Items[i].ToString() == username)
+                {
+                    conversations.SelectedIndex = i;
+                    break;
+                }
+            }
+        }
+
+        private void AddSystemMessage(string text)
+        {
+            chatBox.Items.Add($"📢 {DateTime.Now:HH:mm}: {text}");
+            if (chatBox.Items.Count > 0)
+                chatBox.TopIndex = chatBox.Items.Count - 1;
+        }
+
+        private void Conversations_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (conversations.SelectedItem == null) return;
+            selectedUsername = conversations.SelectedItem.ToString();
+            var user = allUsers.FirstOrDefault(u => u.Username == selectedUsername);
+            if (user != null)
+            {
+                currentConversationPartnerId = user.Id;
+                currentConversationPartnerName = user.Username;
+                selectedUserId = user.Id;
+                currentLoadedMessagesCount = -1;
+                ShowUserProfile(user.Id);
+                LoadMessagesWithUser(user.Id, user.Username);
+                lblChatTitle.Text = "💬 " + selectedUsername;
+            }
+        }
+
         public void RefreshTheme()
         {
             ThemeManager.ApplyTheme(this);
 
-            // Aplică temă pe componentele create manual
             if (header != null) header.BackColor = ThemeManager.Header;
+            if (btnNewChat != null)
+            {
+                btnNewChat.BackColor = ThemeManager.ButtonColor;
+                btnNewChat.ForeColor = Color.White;
+            }
+            if (menuBtn != null)
+            {
+                menuBtn.BackColor = ThemeManager.ButtonColor;
+                menuBtn.ForeColor = Color.White;
+            }
             if (conversations != null)
             {
                 conversations.BackColor = ThemeManager.IsDarkMode ? Color.FromArgb(40, 40, 60) : Color.White;
                 conversations.ForeColor = ThemeManager.TextPrimary;
-                conversations.Invalidate(); // Re-desenează lista
+                conversations.Invalidate();
             }
             if (chatBox != null)
             {
@@ -490,35 +653,10 @@ namespace ChatWave.Forms
                 messageBox.ForeColor = ThemeManager.TextPrimary;
             }
 
-            // Reîmprospătează toate controalele
             this.Invalidate();
             this.Refresh();
             conversations?.Invalidate();
             chatBox?.Invalidate();
-        }
-
-        private void LoadMessages()
-        {
-            if (selectedUserId == -1) return;
-
-            var messages = MessageRepository.GetMessagesBetweenUsers(
-                currentUser.Id,
-                selectedUserId,
-                currentUser.Username,
-                selectedUsername);
-
-            if (messages.Count == currentLoadedMessagesCount) return;
-
-            chatBox.Items.Clear();
-            currentLoadedMessagesCount = messages.Count;
-
-            foreach (var msg in messages)
-            {
-                AddMessageToChat(msg);
-            }
-
-            if (chatBox.Items.Count > 0)
-                chatBox.TopIndex = chatBox.Items.Count - 1;
         }
 
         private void AddMessageToChat(Message msg)
@@ -561,9 +699,9 @@ namespace ChatWave.Forms
                 return;
             }
 
-            if (selectedUserId == -1)
+            if (currentConversationPartnerId == -1)
             {
-                MessageBox.Show("⚠ Selectează un utilizator!", "Eroare", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("⚠ Selectează sau creează o conversație!", "Eroare", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -571,8 +709,8 @@ namespace ChatWave.Forms
             {
                 SenderId = currentUser.Id,
                 SenderName = currentUser.Username,
-                ReceiverId = selectedUserId,
-                ReceiverName = selectedUsername,
+                ReceiverId = currentConversationPartnerId,
+                ReceiverName = currentConversationPartnerName,
                 Text = messageBox.Text.Trim(),
                 SentAt = DateTime.Now
             };
