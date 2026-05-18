@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 using ChatWave.Data;
+using ChatWave.Models;
 
 namespace ChatWave.Forms
 {
@@ -120,7 +121,7 @@ namespace ChatWave.Forms
                 SettingsForm settings = new SettingsForm(currentUser);
                 settings.ShowDialog();
 
-                // Reîncarcă datele după editare
+                RefreshCurrentUserFromDatabase();
                 lblUsername.Text = currentUser.Username;
                 lblEmailValue.Text = currentUser.Email ?? "-";
                 lblPhoneValue.Text = currentUser.Phone ?? "-";
@@ -187,6 +188,18 @@ namespace ChatWave.Forms
             row.Controls.Add(lblLabel);
             row.Controls.Add(valueLabel);
             return row;
+        }
+
+        private void RefreshCurrentUserFromDatabase()
+        {
+            User updatedUser = UserRepository.GetUserById(currentUser.Id);
+            if (updatedUser == null) return;
+
+            currentUser.Username = updatedUser.Username;
+            currentUser.Role = updatedUser.Role;
+            currentUser.Email = updatedUser.Email;
+            currentUser.Phone = updatedUser.Phone;
+            currentUser.Password = updatedUser.Password;
         }
     }
 }

@@ -1,0 +1,125 @@
+version=1
+
+# This file caches language service data to improve the performance of C# Dev Kit.
+# It is not intended for manual editing. It can safely be deleted and will be
+# regenerated automatically. For more information, see https://aka.ms/lscache
+#
+# To control where cache files are stored, use the following VS Code setting:
+#   "dotnet.projectsystem.cacheInProjectFolder": true
+
+[project]
+language=C#
+primary
+lastDtbSucceeded
+
+[properties]
+AssemblyName=ChatWave
+CommandLineArgsForDesignTimeEvaluation=-langversion:7.3 -define:TRACE
+CompilerGeneratedFilesOutputPath=
+MaxSupportedLangVersion=7.3
+ProjectAssetsFile=<PATH>obj/project.assets.json
+RootNamespace=ChatWave
+RunAnalyzers=
+RunAnalyzersDuringLiveAnalysis=
+SolutionPath=<PATH>../ChatWave.slnx
+TargetFrameworkIdentifier=.NETFramework
+TargetPath=<PATH>bin/Debug/net48/ChatWave.exe
+TargetRefPath=
+TemporaryDependencyNodeTargetIdentifier=net48
+
+[commandLineArguments]
+/noconfig
+/unsafe-
+/checked-
+/nowarn:1701,1702,1701,1702
+/fullpaths
+/nostdlib+
+/platform:AnyCPU
+/errorreport:prompt
+/warn:4
+/define:TRACE;DEBUG;NETFRAMEWORK;NET48;NET20_OR_GREATER;NET30_OR_GREATER;NET35_OR_GREATER;NET40_OR_GREATER;NET45_OR_GREATER;NET451_OR_GREATER;NET452_OR_GREATER;NET46_OR_GREATER;NET461_OR_GREATER;NET462_OR_GREATER;NET47_OR_GREATER;NET471_OR_GREATER;NET472_OR_GREATER;NET48_OR_GREATER
+/highentropyva+
+/debug+
+/debug:portable
+/filealign:512
+/optimize-
+/out:obj\Debug\net48\ChatWave.exe
+/subsystemversion:6.00
+/target:exe
+/warnaserror-
+/utf8output
+/deterministic+
+/langversion:7.3
+/warnaserror+:NU1605
+
+[sourceFiles]
+BaseForm.cs
+Data/
+ DatabaseHelper.cs
+ MessageRepository.cs
+ UserProfileRepository.cs
+ UserRepository.cs
+Forms/
+ AdminDashboard.cs
+ AdminDashboard.Designer.cs
+ LoginForm.cs
+ LoginForm.Designer.cs
+ MainChatForm.cs
+ MainChatForm.Designer.cs
+ ProfileForm.cs
+ ProfileForm.Designer.cs
+ Register.Designer.cs
+ RegisterForm.cs
+ SettingsForm.cs
+ SettingsForm.Designer.cs
+Models/
+ ChatMessage.cs
+ ChatRoom.cs
+ Mesage.cs
+ User.cs
+ UserProfile.cs
+obj/Debug/net48/.NETFramework,Version=v4.8.AssemblyAttributes.cs
+Program.cs
+Properties/
+ AssemblyInfo.cs
+ Resources.Designer.cs
+ Settings.Designer.cs
+UserService.cs
+
+[metadataReferences]
+<NETFXREF>/v4.8/
+ mscorlib.dll
+ System.Configuration.dll
+ System.Core.dll
+ System.Data.dll
+ System.Deployment.dll
+ System.dll
+ System.Drawing.dll
+ System.IO.Compression.FileSystem.dll
+ System.Management.dll
+ System.Net.Http.dll
+ System.Numerics.dll
+ System.Runtime.Serialization.dll
+ System.Transactions.dll
+ System.Windows.Forms.dll
+ System.Xml.dll
+ System.Xml.Linq.dll
+<NUGET>/
+ bouncycastle.cryptography/2.6.2/lib/net461/BouncyCastle.Cryptography.dll
+ google.protobuf/3.32.0/lib/net45/Google.Protobuf.dll
+ k4os.compression.lz4.streams/1.3.8/lib/net462/K4os.Compression.LZ4.Streams.dll
+ k4os.compression.lz4/1.3.8/lib/net462/K4os.Compression.LZ4.dll
+ k4os.hash.xxhash/1.0.8/lib/net462/K4os.Hash.xxHash.dll
+ microsoft.bcl.asyncinterfaces/5.0.0/lib/net461/Microsoft.Bcl.AsyncInterfaces.dll
+ mysql.data/9.7.0/lib/net48/MySql.Data.dll
+ system.buffers/4.5.1/ref/net45/System.Buffers.dll
+ system.configuration.configurationmanager/8.0.0/lib/net462/System.Configuration.ConfigurationManager.dll
+ system.io.pipelines/5.0.2/lib/net461/System.IO.Pipelines.dll
+ system.memory/4.5.5/lib/net461/System.Memory.dll
+ system.numerics.vectors/4.5.0/ref/net46/System.Numerics.Vectors.dll
+ system.runtime.compilerservices.unsafe/6.0.0/lib/net461/System.Runtime.CompilerServices.Unsafe.dll
+ system.threading.tasks.extensions/4.5.4/lib/net461/System.Threading.Tasks.Extensions.dll
+ zstdsharp.port/0.8.6/lib/net462/ZstdSharp.dll
+
+[analyzerConfigFiles]
+obj/Debug/net48/ChatWave.GeneratedMSBuildEditorConfig.editorconfig

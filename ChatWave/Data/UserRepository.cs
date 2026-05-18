@@ -155,10 +155,22 @@ namespace ChatWave.Data
                 using (var conn = DatabaseHelper.GetConnection())
                 {
                     conn.Open();
-                    string query = "UPDATE Users SET Email=@email, Phone=@phone WHERE Id=@id";
+                    string checkQuery = "SELECT COUNT(*) FROM UserProfiles WHERE UserId = @id";
+                    var checkCmd = new MySqlCommand(checkQuery, conn);
+                    checkCmd.Parameters.AddWithValue("@id", id);
+                    int profileCount = Convert.ToInt32(checkCmd.ExecuteScalar());
+
+                    string query = profileCount > 0
+                        ? @"UPDATE UserProfiles
+                            SET Email = @email, Phone = @phone, UpdatedAt = @updatedAt
+                            WHERE UserId = @id"
+                        : @"INSERT INTO UserProfiles (UserId, Email, Phone, Bio, UpdatedAt)
+                            VALUES (@id, @email, @phone, '', @updatedAt)";
+
                     var cmd = new MySqlCommand(query, conn);
                     cmd.Parameters.AddWithValue("@email", email);
                     cmd.Parameters.AddWithValue("@phone", phone);
+                    cmd.Parameters.AddWithValue("@updatedAt", DateTime.Now);
                     cmd.Parameters.AddWithValue("@id", id);
                     cmd.ExecuteNonQuery();
                     return true;

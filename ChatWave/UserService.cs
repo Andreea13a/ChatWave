@@ -26,7 +26,17 @@ namespace ChatWave
                 using (var conn = DatabaseHelper.GetConnection())
                 {
                     conn.Open();
-                    string sql = "SELECT Id, Username, Role, Email, Phone, Password FROM Users WHERE Username = @u AND Password = @p";
+                    string sql = @"
+                        SELECT
+                            u.Id,
+                            u.Username,
+                            u.Role,
+                            up.Email,
+                            up.Phone,
+                            u.Password
+                        FROM Users u
+                        LEFT JOIN UserProfiles up ON u.Id = up.UserId
+                        WHERE u.Username = @u AND u.Password = @p";
 
                     using (var cmd = new MySqlCommand(sql, conn))
                     {

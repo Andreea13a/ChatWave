@@ -46,9 +46,7 @@
     <Compile Update="Forms\LoginForm.Designer.cs">
       <DependentUpon>LoginForm.cs</DependentUpon>
     </Compile>
-    <Compile Update="Forms\MainChatForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Update="Forms\MainChatForm.cs" />
     <Compile Update="Forms\MainChatForm.Designer.cs">
       <DependentUpon>MainChatForm.cs</DependentUpon>
     </Compile>
@@ -64,9 +62,7 @@
     <Compile Update="Forms\RegisterForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="Forms\SettingsForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Update="Forms\SettingsForm.cs" />
     <Compile Update="Forms\SettingsForm.Designer.cs">
       <DependentUpon>SettingsForm.cs</DependentUpon>
     </Compile>

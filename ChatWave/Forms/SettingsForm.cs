@@ -14,6 +14,7 @@ namespace ChatWave.Forms
         private TabControl tabControl;
         private TabPage tabProfile;
         private TabPage tabPassword;
+        private TabPage tabTheme;
 
         private TextBox txtUsername;
         private TextBox txtEmail;
@@ -28,6 +29,10 @@ namespace ChatWave.Forms
         private Label lblPasswordError;
         private Label lblPasswordSuccess;
         private Button btnSavePassword;
+
+        private Button btnLightMode;
+        private Button btnDarkMode;
+        private Label lblThemeStatus;
 
         public SettingsForm(LoggedUser user)
         {
@@ -67,7 +72,7 @@ namespace ChatWave.Forms
             tabControl.Dock = DockStyle.Fill;
             tabControl.Font = new Font("Segoe UI", 10);
 
-            // TAB PROFIL
+            // ── TAB PROFIL ──────────────────────────────────────────
             tabProfile = new TabPage();
             tabProfile.Text = "👤 Profil";
             tabProfile.BackColor = Color.White;
@@ -116,7 +121,7 @@ namespace ChatWave.Forms
                 btnSaveProfile.BackColor = movButton;
             tabProfile.Controls.Add(btnSaveProfile);
 
-            // TAB PAROLA
+            // ── TAB PAROLA ──────────────────────────────────────────
             tabPassword = new TabPage();
             tabPassword.Text = "🔒 Parolă";
             tabPassword.BackColor = Color.White;
@@ -166,8 +171,69 @@ namespace ChatWave.Forms
                 btnSavePassword.BackColor = movButton;
             tabPassword.Controls.Add(btnSavePassword);
 
+            // ── TAB TEMA ────────────────────────────────────────────
+            tabTheme = new TabPage();
+            tabTheme.Text = "🌙 Temă";
+            tabTheme.BackColor = Color.White;
+
+            Label lblThemeTitle = new Label();
+            lblThemeTitle.Text = "Alege tema aplicației:";
+            lblThemeTitle.Font = new Font("Segoe UI", 12, FontStyle.Bold);
+            lblThemeTitle.ForeColor = Color.FromArgb(70, 70, 70);
+            lblThemeTitle.Location = new Point(20, 30);
+            lblThemeTitle.AutoSize = true;
+            tabTheme.Controls.Add(lblThemeTitle);
+
+            lblThemeStatus = new Label();
+            lblThemeStatus.Text = ChatWave.ThemeManager.IsDarkMode
+                ? "Tema curentă: 🌙 Dark Mode"
+                : "Tema curentă: ☀️ Light Mode";
+            lblThemeStatus.Font = new Font("Segoe UI", 10);
+            lblThemeStatus.ForeColor = Color.FromArgb(120, 80, 180);
+            lblThemeStatus.Location = new Point(20, 65);
+            lblThemeStatus.AutoSize = true;
+            tabTheme.Controls.Add(lblThemeStatus);
+
+            btnLightMode = new Button();
+            btnLightMode.Text = "☀️ Light Mode";
+            btnLightMode.Location = new Point(20, 110);
+            btnLightMode.Size = new Size(190, 80);
+            btnLightMode.BackColor = Color.FromArgb(255, 249, 235);
+            btnLightMode.ForeColor = Color.FromArgb(180, 130, 20);
+            btnLightMode.FlatStyle = FlatStyle.Flat;
+            btnLightMode.FlatAppearance.BorderColor = Color.FromArgb(220, 180, 50);
+            btnLightMode.FlatAppearance.BorderSize = 2;
+            btnLightMode.Font = new Font("Segoe UI", 12, FontStyle.Bold);
+            btnLightMode.Cursor = Cursors.Hand;
+            btnLightMode.Click += BtnLightMode_Click;
+            tabTheme.Controls.Add(btnLightMode);
+
+            btnDarkMode = new Button();
+            btnDarkMode.Text = "🌙 Dark Mode";
+            btnDarkMode.Location = new Point(240, 110);
+            btnDarkMode.Size = new Size(190, 80);
+            btnDarkMode.BackColor = Color.FromArgb(40, 40, 60);
+            btnDarkMode.ForeColor = Color.White;
+            btnDarkMode.FlatStyle = FlatStyle.Flat;
+            btnDarkMode.FlatAppearance.BorderColor = Color.FromArgb(100, 80, 160);
+            btnDarkMode.FlatAppearance.BorderSize = 2;
+            btnDarkMode.Font = new Font("Segoe UI", 12, FontStyle.Bold);
+            btnDarkMode.Cursor = Cursors.Hand;
+            btnDarkMode.Click += BtnDarkMode_Click;
+            tabTheme.Controls.Add(btnDarkMode);
+
+            Label lblNote = new Label();
+            lblNote.Text = "⚠️ Tema se aplică imediat pentru toată aplicația.";
+            lblNote.Font = new Font("Segoe UI", 9);
+            lblNote.ForeColor = Color.FromArgb(150, 150, 150);
+            lblNote.Location = new Point(20, 210);
+            lblNote.AutoSize = true;
+            tabTheme.Controls.Add(lblNote);
+
+            // ADAUGA TABURILE — ordinea conteaza!
             tabControl.TabPages.Add(tabProfile);
             tabControl.TabPages.Add(tabPassword);
+            tabControl.TabPages.Add(tabTheme);
 
             this.Controls.Add(tabControl);
             this.Controls.Add(pnlHeader);
@@ -227,6 +293,9 @@ namespace ChatWave.Forms
                 currentUser.Email = txtEmail.Text.Trim();
                 currentUser.Phone = txtPhone.Text.Trim();
                 lblProfileSuccess.Text = "✅ Profil actualizat cu succes!";
+
+                if (this.Owner is MainChatForm mainForm)
+                    mainForm.RefreshUsers();
             }
             else
             {
@@ -280,6 +349,37 @@ namespace ChatWave.Forms
             else
             {
                 lblPasswordError.Text = "⚠ Eroare la schimbarea parolei!";
+            }
+        }
+
+        private void BtnLightMode_Click(object sender, EventArgs e)
+        {
+            ChatWave.ThemeManager.SetDarkMode(false);
+            lblThemeStatus.Text = "Tema curentă: ☀️ Light Mode";
+            ApplyThemeToAllForms();
+        }
+
+        private void BtnDarkMode_Click(object sender, EventArgs e)
+        {
+            ChatWave.ThemeManager.SetDarkMode(true);
+            lblThemeStatus.Text = "Tema curentă: 🌙 Dark Mode";
+            ApplyThemeToAllForms();
+        }
+
+        private void ApplyThemeToAllForms()
+        {
+            foreach (Form form in Application.OpenForms)
+            {
+                ThemeManager.ApplyTheme(form);
+
+                // Dacă formularul este MainChatForm, apelează metoda specifică de reîmprospătare
+                if (form is MainChatForm mainForm)
+                {
+                    mainForm.RefreshTheme();
+                }
+
+                form.Invalidate(true);
+                form.Refresh();
             }
         }
     }
